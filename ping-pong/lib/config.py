@@ -44,7 +44,8 @@ REPLAY_SIMULATION_CONFIG = SimulationConfig(
     renderer_quality="quality",
     timeout_s=3 * 3600,
 )
-"""Isaac Sim for the replay: 160 physics steps per rendered frame."""
+"""Isaac Sim for the replay. During a replay PhysX steps the paddles and retired balls at 240 Hz while the adapter
+integrates the ball and sweeps its contacts at the 3840 Hz game step (``lib/replay/ball.py``)."""
 
 ROBOT_SIMULATION_CONFIG = SimulationConfig(log_level="warning", timeout_s=3 * 3600)
 """Isaac Lab for the policy and the template; Lab sets its own physics step (``lib/robots/table_scene.py``)."""

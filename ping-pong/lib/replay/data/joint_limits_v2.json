@@ -1,0 +1,1199 @@
+{
+ "schema": "tt-joint-limits/1",
+ "version": "joint_limits_v2",
+ "created_utc": "2026-10-07T21:13:20+00:00",
+ "status": "speed limits, glitch ceilings and anatomical angle ranges",
+ "speed_method": "Per joint, the geodesic angle between consecutive frames of the joint's rest-relative rotation (child segment on parent segment) times the frame rate, on the RAW Rokoko capture (Clip_2..Clip_8, 59,154 frames at 30 Hz, before the retarget's 850 deg/s cap and low-pass). The forearm joint is measured as the motion pipeline and the game carry it on ActorCore bodies (elbow AND pronation: the hand on the humerus with the wrist's flexion and deviation removed); the hand joint as the wrist's flexion and deviation only. The limit is the capture's largest speed over every frame (inside and outside stroke windows; none of the top 20 frames per joint is an out-and-back sensor spike) times the 90th percentile of its 30 Hz under-sampling ratio (a cubic spline of the rotation vector through +-5 frames of each stroke's own peak, resampled at 240 Hz, over 692 strokes; it cannot restore what the suit's own filter removed, so it is a lower bound on the under-read). Left and right share one limit: the larger side's.",
+ "glitch_method": "A glitch is a frame where a joint turns faster than its glitch ceiling (the fastest any human source we hold moved it: this player's capture as above, the rigs' 26 authored clips of other actors at the same correction, and the cited mean + 2 SD), or changes its velocity within one frame by more than that ceiling: reaching the ceiling speed from rest in under one 24 fps frame (41.7 ms). The capture never changes a joint's velocity by more than 0.58-0.81 of its own top speed within one frame ('capture_step_change_over_speed_per_frame'), so the second rule never fires on it; it scales as (24 / fps)^2 at another rate. Body synthesis feasibility uses the player's own 'speed_limit_deg_s', not the ceiling.",
+ "step_change_method": "A velocity discontinuity: per frame, the angle between consecutive steps (the second difference on SO(3)), at the game's playback (slerp between 30 Hz frames, sampled at 24 fps). The limit is the largest the capture itself shows played back that way, so the capture never exceeds it; it scales as (24 / fps)^2 at another rate.",
+ "groups": {
+  "clavicle": {
+   "speed_limit_deg_s": 227.0,
+   "step_change_limit_deg_at_24fps": 6.7,
+   "evidence": {
+    "measure": "R.clavicle",
+    "capture_max_deg_s": 217.2,
+    "undersampling_ratio_p90": 1.043,
+    "inside_strokes_p99.9_deg_s": 173.8,
+    "outside_strokes_p99.9_deg_s": 126.9,
+    "stroke_peak_p50_deg_s": 59.7,
+    "capture_step_change_p99.99_deg_at_24fps": 5.966,
+    "capture_step_change_over_speed_per_frame": 0.7
+   },
+   "glitch_speed_deg_s": 227.0,
+   "glitch_speed_sources": {
+    "capture": 227.0,
+    "rig_clips": 143.0
+   }
+  },
+  "upperarm": {
+   "speed_limit_deg_s": 650.0,
+   "step_change_limit_deg_at_24fps": 19.4,
+   "evidence": {
+    "measure": "R.upperarm",
+    "capture_max_deg_s": 626.7,
+    "undersampling_ratio_p90": 1.037,
+    "inside_strokes_p99.9_deg_s": 484.0,
+    "outside_strokes_p99.9_deg_s": 352.8,
+    "stroke_peak_p50_deg_s": 205.9,
+    "capture_step_change_p99.99_deg_at_24fps": 12.7,
+    "capture_step_change_over_speed_per_frame": 0.72
+   },
+   "literature": {
+    "mean": 955.02,
+    "sd": 182.66,
+    "what": "shoulder internal/external rotation, max, backhand topspin after backspin (BH2)",
+    "mean_plus_2sd_deg_s": 1320.0,
+    "limit_over_upper": 0.49
+   },
+   "glitch_speed_deg_s": 1320.0,
+   "glitch_speed_sources": {
+    "capture": 650.0,
+    "rig_clips": 588.0,
+    "literature": 1320.0
+   }
+  },
+  "forearm": {
+   "speed_limit_deg_s": 1185.0,
+   "step_change_limit_deg_at_24fps": 33.8,
+   "evidence": {
+    "measure": "R.forearm",
+    "capture_max_deg_s": 1131.7,
+    "undersampling_ratio_p90": 1.047,
+    "inside_strokes_p99.9_deg_s": 883.5,
+    "outside_strokes_p99.9_deg_s": 668.7,
+    "stroke_peak_p50_deg_s": 262.4,
+    "capture_step_change_p99.99_deg_at_24fps": 24.4,
+    "capture_step_change_over_speed_per_frame": 0.68
+   },
+   "literature": {
+    "mean": 724.15,
+    "sd": 202.57,
+    "what": "forearm pronation/supination at contact, backhand topspin after backspin (BH2, magnitude)",
+    "mean_plus_2sd_deg_s": 1129.0,
+    "limit_over_upper": 1.05
+   },
+   "glitch_speed_deg_s": 1185.0,
+   "glitch_speed_sources": {
+    "capture": 1185.0,
+    "rig_clips": 604.0,
+    "literature": 1129.0
+   }
+  },
+  "hand": {
+   "speed_limit_deg_s": 725.0,
+   "step_change_limit_deg_at_24fps": 19.3,
+   "evidence": {
+    "measure": "R.hand",
+    "capture_max_deg_s": 674.6,
+    "undersampling_ratio_p90": 1.075,
+    "inside_strokes_p99.9_deg_s": 419.4,
+    "outside_strokes_p99.9_deg_s": 375.5,
+    "stroke_peak_p50_deg_s": 89.3,
+    "capture_step_change_p99.99_deg_at_24fps": 15.4,
+    "capture_step_change_over_speed_per_frame": 0.64
+   },
+   "literature": {
+    "mean": 989.48,
+    "sd": 346.11,
+    "what": "wrist flexion/extension at contact, heavy backhand topspin (BH3, magnitude)",
+    "mean_plus_2sd_deg_s": 1682.0,
+    "limit_over_upper": 0.43
+   },
+   "glitch_speed_deg_s": 1682.0,
+   "glitch_speed_sources": {
+    "capture": 725.0,
+    "rig_clips": 762.0,
+    "literature": 1682.0
+   }
+  },
+  "pronation": {
+   "speed_limit_deg_s": 1112.0,
+   "step_change_limit_deg_at_24fps": 29.3,
+   "evidence": {
+    "measure": "R.pronation",
+    "capture_max_deg_s": 1042.8,
+    "undersampling_ratio_p90": 1.066,
+    "inside_strokes_p99.9_deg_s": 828.6,
+    "outside_strokes_p99.9_deg_s": 605.5,
+    "stroke_peak_p50_deg_s": 172.3,
+    "capture_step_change_p99.99_deg_at_24fps": 24.1,
+    "capture_step_change_over_speed_per_frame": 0.63
+   },
+   "literature": {
+    "mean": 724.15,
+    "sd": 202.57,
+    "what": "forearm pronation/supination at contact, backhand topspin after backspin (BH2, magnitude)",
+    "mean_plus_2sd_deg_s": 1129.0,
+    "limit_over_upper": 0.98
+   },
+   "glitch_speed_deg_s": 1129.0,
+   "glitch_speed_sources": {
+    "capture": 1112.0,
+    "literature": 1129.0
+   }
+  },
+  "spine": {
+   "speed_limit_deg_s": 277.0,
+   "step_change_limit_deg_at_24fps": 6.7,
+   "evidence": {
+    "measure": "spine",
+    "capture_max_deg_s": 266.0,
+    "undersampling_ratio_p90": 1.04,
+    "inside_strokes_p99.9_deg_s": 220.2,
+    "outside_strokes_p99.9_deg_s": 157.8,
+    "stroke_peak_p50_deg_s": 56.5,
+    "capture_step_change_p99.99_deg_at_24fps": 5.368,
+    "capture_step_change_over_speed_per_frame": 0.58
+   },
+   "literature": {
+    "mean": 579.01,
+    "sd": 154.14,
+    "what": "shoulder-girdle rotation, max, heavy forehand topspin (FH3; world axial, not chest-on-pelvis)",
+    "mean_plus_2sd_deg_s": 887.0,
+    "limit_over_upper": 0.31
+   },
+   "glitch_speed_deg_s": 887.0,
+   "glitch_speed_sources": {
+    "capture": 277.0,
+    "rig_clips": 291.0,
+    "literature": 887.0
+   }
+  },
+  "neck": {
+   "speed_limit_deg_s": 482.0,
+   "step_change_limit_deg_at_24fps": 8.6,
+   "evidence": {
+    "measure": "neck",
+    "capture_max_deg_s": 467.0,
+    "undersampling_ratio_p90": 1.033,
+    "inside_strokes_p99.9_deg_s": 303.8,
+    "outside_strokes_p99.9_deg_s": 294.2,
+    "stroke_peak_p50_deg_s": 78.2,
+    "capture_step_change_p99.99_deg_at_24fps": 7.0,
+    "capture_step_change_over_speed_per_frame": 0.43
+   },
+   "glitch_speed_deg_s": 532.0,
+   "glitch_speed_sources": {
+    "capture": 482.0,
+    "rig_clips": 228.0,
+    "literature": 532.0
+   }
+  },
+  "pelvis": {
+   "speed_limit_deg_s": 455.0,
+   "step_change_limit_deg_at_24fps": 10.3,
+   "evidence": {
+    "measure": "pelvis_world",
+    "capture_max_deg_s": 443.2,
+    "undersampling_ratio_p90": 1.027,
+    "inside_strokes_p99.9_deg_s": 257.2,
+    "outside_strokes_p99.9_deg_s": 273.7,
+    "stroke_peak_p50_deg_s": 64.2,
+    "capture_step_change_p99.99_deg_at_24fps": 6.4,
+    "capture_step_change_over_speed_per_frame": 0.54
+   },
+   "literature": {
+    "mean": 392.45,
+    "sd": 132.87,
+    "what": "pelvis rotation, max, heavy forehand topspin (FH3)",
+    "mean_plus_2sd_deg_s": 658.0,
+    "limit_over_upper": 0.69
+   },
+   "glitch_speed_deg_s": 658.0,
+   "glitch_speed_sources": {
+    "capture": 455.0,
+    "literature": 658.0
+   }
+  },
+  "thigh": {
+   "speed_limit_deg_s": 992.0,
+   "step_change_limit_deg_at_24fps": 26.9,
+   "evidence": {
+    "measure": "R.thigh",
+    "capture_max_deg_s": 887.9,
+    "undersampling_ratio_p90": 1.117,
+    "inside_strokes_p99.9_deg_s": 411.7,
+    "outside_strokes_p99.9_deg_s": 466.4,
+    "stroke_peak_p50_deg_s": 78.1,
+    "capture_step_change_p99.99_deg_at_24fps": 24.7,
+    "capture_step_change_over_speed_per_frame": 0.65
+   },
+   "literature": {
+    "mean": 225.81,
+    "sd": 113.27,
+    "what": "non-playing-side hip flexion/extension, max (FH3; strokes only, no footwork)",
+    "mean_plus_2sd_deg_s": 452.0,
+    "limit_over_upper": 2.19
+   },
+   "glitch_speed_deg_s": 992.0,
+   "glitch_speed_sources": {
+    "capture": 992.0,
+    "rig_clips": 854.0,
+    "literature": 452.0
+   }
+  },
+  "calf": {
+   "speed_limit_deg_s": 642.0,
+   "step_change_limit_deg_at_24fps": 24.8,
+   "evidence": {
+    "measure": "R.calf",
+    "capture_max_deg_s": 580.8,
+    "undersampling_ratio_p90": 1.106,
+    "inside_strokes_p99.9_deg_s": 369.9,
+    "outside_strokes_p99.9_deg_s": 362.1,
+    "stroke_peak_p50_deg_s": 56.7,
+    "capture_step_change_p99.99_deg_at_24fps": 15.2,
+    "capture_step_change_over_speed_per_frame": 0.93
+   },
+   "literature": {
+    "mean": 138.35,
+    "sd": 118.38,
+    "what": "knee flexion/extension, max (FH2; strokes only, no footwork)",
+    "mean_plus_2sd_deg_s": 375.0,
+    "limit_over_upper": 1.71
+   },
+   "glitch_speed_deg_s": 1222.0,
+   "glitch_speed_sources": {
+    "capture": 642.0,
+    "rig_clips": 1222.0,
+    "literature": 375.0
+   }
+  },
+  "foot": {
+   "speed_limit_deg_s": 867.0,
+   "step_change_limit_deg_at_24fps": 29.3,
+   "evidence": {
+    "measure": "R.foot",
+    "capture_max_deg_s": 786.5,
+    "undersampling_ratio_p90": 1.102,
+    "inside_strokes_p99.9_deg_s": 495.4,
+    "outside_strokes_p99.9_deg_s": 495.2,
+    "stroke_peak_p50_deg_s": 99.5,
+    "capture_step_change_p99.99_deg_at_24fps": 25.9,
+    "capture_step_change_over_speed_per_frame": 0.81
+   },
+   "literature": {
+    "mean": 191.62,
+    "sd": 104.04,
+    "what": "ankle flexion/extension, max (FH3; strokes only, no footwork)",
+    "mean_plus_2sd_deg_s": 400.0,
+    "limit_over_upper": 2.17
+   },
+   "glitch_speed_deg_s": 1341.0,
+   "glitch_speed_sources": {
+    "capture": 867.0,
+    "rig_clips": 1341.0,
+    "literature": 400.0
+   }
+  }
+ },
+ "actorcore_joint_groups": {
+  "Hip": "pelvis",
+  "Pelvis": "pelvis",
+  "Waist": "spine",
+  "Spine01": "spine",
+  "Spine02": "spine",
+  "NeckTwist01": "neck",
+  "NeckTwist02": "neck",
+  "Head": "neck",
+  "{s}_Clavicle": "clavicle",
+  "{s}_Upperarm": "upperarm",
+  "{s}_UpperarmTwist01": "upperarm",
+  "{s}_UpperarmTwist02": "upperarm",
+  "{s}_Forearm": "forearm",
+  "{s}_ElbowShareBone": "forearm",
+  "{s}_ForearmTwist01": "pronation",
+  "{s}_ForearmTwist02": "pronation",
+  "{s}_Hand": "hand",
+  "{s}_Thigh": "thigh",
+  "{s}_ThighTwist01": "thigh",
+  "{s}_ThighTwist02": "thigh",
+  "{s}_Calf": "calf",
+  "{s}_CalfTwist01": "calf",
+  "{s}_CalfTwist02": "calf",
+  "{s}_KneeShareBone": "calf",
+  "{s}_Foot": "foot"
+ },
+ "stand_ins": {
+  "finger": "hand",
+  "toe": "foot",
+  "face": "neck",
+  "breast_ribs": "spine"
+ },
+ "citations": {
+  "roijezon2010": "Roijezon U, Djupsjobacka M, Bjorklund M, Hager-Ross C, Grip H, Liebermann DG. Kinematics of fast cervical rotations in persons with chronic neck pain: a cross-sectional and reliability study. BMC Musculoskelet Disord. 2010;11:222. doi:10.1186/1471-2474-11-222.",
+  "bankosz2018": "Bankosz Z, Winiarski S. Correlations between angular velocities in selected joints and velocity of table tennis racket during topspin forehand and backhand. J Sports Sci Med. 2018;17(2):330-338. PMC5950751.",
+  "soucie2011": "Soucie JM, Wang C, Forsyth A, et al. Range of motion measurements: reference values and a database for comparison studies. Haemophilia. 2011;17(3):500-507.",
+  "aaos1994": "Greene WB, Heckman JD, eds. The Clinical Measurement of Joint Motion. American Academy of Orthopaedic Surgeons; 1994.",
+  "sc_joint": "Sternoclavicular joint ranges (elevation 45, depression 10, protraction and retraction 30): Verma, Shoulder anatomy and biomechanics (foreonline.org, 2016).",
+  "wblt": "Weight-bearing lunge test dorsiflexion norms 33-48 degrees: review of four normative studies, 'Valores normativos para amplitude de movimento de dorsiflexao: revisao de literatura' (UFMG repository 1843/31382)."
+ },
+ "ranges": {
+  "ankle_adduction": {
+   "range_deg": [
+    -31.0,
+    54.1
+   ],
+   "gate_range_deg": [
+    -31.0,
+    54.1
+   ],
+   "natural_extremes_deg": [
+    -26.4,
+    52.2
+   ],
+   "binding": [
+    "envelope",
+    "envelope"
+   ],
+   "clinical_deg": null,
+   "clinical_source": null,
+   "clinical_note": "no clinical norm used",
+   "envelope_source": "rig",
+   "envelope_note": "the suit's foot yaw spans -77..62 degrees, not a foot's",
+   "capture_p0.1_p99.9_deg": [
+    -94.8,
+    57.7
+   ],
+   "rig_clips_p0.1_p99.9_deg": [
+    -26.0,
+    49.1
+   ],
+   "gated": false
+  },
+  "ankle_dorsiflexion": {
+   "range_deg": [
+    -40.5,
+    43.5
+   ],
+   "gate_range_deg": [
+    -48.0,
+    48.0
+   ],
+   "natural_extremes_deg": [
+    -48.0,
+    48.3
+   ],
+   "binding": [
+    "envelope",
+    "envelope"
+   ],
+   "clinical_deg": [
+    -54.6,
+    48.0
+   ],
+   "clinical_source": "soucie2011+wblt",
+   "clinical_note": "plantar flexion 54.6 (Soucie); weight-bearing dorsiflexion 33-48 (lunge-test norms)",
+   "envelope_source": "capture",
+   "envelope_note": "the capture's own envelope",
+   "capture_p0.1_p99.9_deg": [
+    -35.5,
+    38.5
+   ],
+   "rig_clips_p0.1_p99.9_deg": [
+    -45.1,
+    45.2
+   ],
+   "gated": false
+  },
+  "ankle_inversion": {
+   "range_deg": [
+    -15.0,
+    35.0
+   ],
+   "gate_range_deg": [
+    -15.0,
+    35.0
+   ],
+   "natural_extremes_deg": [
+    -26.3,
+    64.9
+   ],
+   "binding": [
+    "clinical",
+    "clinical"
+   ],
+   "clinical_deg": [
+    -15.0,
+    35.0
+   ],
+   "clinical_source": "aaos1994",
+   "clinical_note": "eversion 15, inversion 35",
+   "envelope_source": "capture",
+   "envelope_note": "the capture's own envelope",
+   "capture_p0.1_p99.9_deg": [
+    -17.4,
+    41.6
+   ],
+   "rig_clips_p0.1_p99.9_deg": [
+    -22.6,
+    37.5
+   ],
+   "gated": false
+  },
+  "clavicle_elevation": {
+   "range_deg": [
+    -29.4,
+    52.0
+   ],
+   "gate_range_deg": [
+    -29.4,
+    52.1
+   ],
+   "natural_extremes_deg": [
+    -25.0,
+    52.1
+   ],
+   "binding": [
+    "envelope",
+    "envelope"
+   ],
+   "clinical_deg": null,
+   "clinical_source": null,
+   "clinical_note": "no clinical norm used",
+   "envelope_source": "rig",
+   "envelope_note": "the suit's clavicle bind differs from the rig's (median protraction -24 against the rig's +11); the rig's bind is not anatomical neutral either (its own clips sit 20 degrees below it), so the sternoclavicular clinical ranges (elevation 45, depression 10, protraction and retraction 30) do not apply to bind-relative angles: the rig's own envelope alone",
+   "capture_p0.1_p99.9_deg": [
+    -10.9,
+    16.1
+   ],
+   "rig_clips_p0.1_p99.9_deg": [
+    -24.4,
+    47.0
+   ],
+   "gated": true
+  },
+  "clavicle_protraction": {
+   "range_deg": [
+    -21.8,
+    32.1
+   ],
+   "gate_range_deg": [
+    -21.8,
+    32.1
+   ],
+   "natural_extremes_deg": [
+    -17.3,
+    29.5
+   ],
+   "binding": [
+    "envelope",
+    "envelope"
+   ],
+   "clinical_deg": null,
+   "clinical_source": null,
+   "clinical_note": "no clinical norm used",
+   "envelope_source": "rig",
+   "envelope_note": "the suit's clavicle bind differs from the rig's; bind-relative, so the rig's own envelope alone",
+   "capture_p0.1_p99.9_deg": [
+    -40.0,
+    13.6
+   ],
+   "rig_clips_p0.1_p99.9_deg": [
+    -16.8,
+    27.1
+   ],
+   "gated": true
+  },
+  "elbow_flexion": {
+   "range_deg": [
+    -0.8,
+    118.8
+   ],
+   "gate_range_deg": [
+    -0.8,
+    131.1
+   ],
+   "natural_extremes_deg": [
+    -29.4,
+    131.1
+   ],
+   "binding": [
+    "clinical",
+    "envelope"
+   ],
+   "clinical_deg": [
+    -0.8,
+    144.6
+   ],
+   "clinical_source": "soucie2011",
+   "clinical_note": "elbow extension 0.8, flexion 144.6 (men 20-44)",
+   "envelope_source": "capture",
+   "envelope_note": "the capture's own envelope",
+   "capture_p0.1_p99.9_deg": [
+    -18.1,
+    113.8
+   ],
+   "rig_clips_p0.1_p99.9_deg": [
+    -0.1,
+    134.6
+   ],
+   "gated": true
+  },
+  "elbow_offplane": {
+   "range_deg": [
+    -10.0,
+    10.0
+   ],
+   "gate_range_deg": [
+    -10.0,
+    10.0
+   ],
+   "natural_extremes_deg": [
+    -58.8,
+    62.7
+   ],
+   "binding": [
+    "clinical",
+    "clinical"
+   ],
+   "clinical_deg": [
+    -10.0,
+    10.0
+   ],
+   "clinical_source": "hinge",
+   "clinical_note": "a hinge: no voluntary varus or valgus; the rigs' own clips hold 0 +- 0.1 degree; +-10 for the carrying angle's spread",
+   "envelope_source": "capture",
+   "envelope_note": "the capture's own envelope",
+   "capture_p0.1_p99.9_deg": [
+    -44.3,
+    47.2
+   ],
+   "rig_clips_p0.1_p99.9_deg": [
+    -27.1,
+    0.8
+   ],
+   "gated": true
+  },
+  "forearm_pronation": {
+   "range_deg": [
+    -85.0,
+    76.9
+   ],
+   "gate_range_deg": [
+    -85.0,
+    76.9
+   ],
+   "natural_extremes_deg": null,
+   "binding": [
+    "clinical",
+    "clinical"
+   ],
+   "clinical_deg": [
+    -85.0,
+    76.9
+   ],
+   "clinical_source": "soucie2011",
+   "clinical_note": "supination 85.0, pronation 76.9 (men 20-44)",
+   "envelope_source": "clinical",
+   "envelope_note": "the suit's hand roll is 130-150 degrees off the paddle (motion v2's IMU fit); its pronation envelope is not the forearm's",
+   "capture_p0.1_p99.9_deg": [
+    -160.1,
+    36.1
+   ],
+   "rig_clips_p0.1_p99.9_deg": [
+    -98.4,
+    116.6
+   ],
+   "gated": true
+  },
+  "hip_abduction": {
+   "range_deg": [
+    -19.7,
+    45.0
+   ],
+   "gate_range_deg": [
+    -26.3,
+    45.0
+   ],
+   "natural_extremes_deg": [
+    -26.3,
+    66.2
+   ],
+   "binding": [
+    "envelope",
+    "clinical"
+   ],
+   "clinical_deg": [
+    -30.0,
+    45.0
+   ],
+   "clinical_source": "aaos1994",
+   "clinical_note": "adduction 30, abduction 45",
+   "envelope_source": "capture",
+   "envelope_note": "the capture's own envelope",
+   "capture_p0.1_p99.9_deg": [
+    -14.7,
+    54.8
+   ],
+   "rig_clips_p0.1_p99.9_deg": [
+    -12.4,
+    54.8
+   ],
+   "gated": false
+  },
+  "hip_flexion": {
+   "range_deg": [
+    -17.4,
+    76.6
+   ],
+   "gate_range_deg": [
+    -17.4,
+    97.2
+   ],
+   "natural_extremes_deg": [
+    -33.2,
+    97.2
+   ],
+   "binding": [
+    "clinical",
+    "envelope"
+   ],
+   "clinical_deg": [
+    -17.4,
+    130.4
+   ],
+   "clinical_source": "soucie2011",
+   "clinical_note": "hip extension 17.4, flexion 130.4 (men 20-44)",
+   "envelope_source": "capture",
+   "envelope_note": "the capture's own envelope",
+   "capture_p0.1_p99.9_deg": [
+    -19.4,
+    71.6
+   ],
+   "rig_clips_p0.1_p99.9_deg": [
+    -26.7,
+    127.0
+   ],
+   "gated": false
+  },
+  "hip_rotation": {
+   "range_deg": [
+    -45.0,
+    37.5
+   ],
+   "gate_range_deg": [
+    -45.0,
+    40.0
+   ],
+   "natural_extremes_deg": [
+    -88.1,
+    52.4
+   ],
+   "binding": [
+    "clinical",
+    "envelope"
+   ],
+   "clinical_deg": [
+    -45.0,
+    40.0
+   ],
+   "clinical_source": "aaos1994",
+   "clinical_note": "external rotation 45, internal rotation 40",
+   "envelope_source": "capture",
+   "envelope_note": "the capture's own envelope",
+   "capture_p0.1_p99.9_deg": [
+    -65.9,
+    32.5
+   ],
+   "rig_clips_p0.1_p99.9_deg": [
+    -61.3,
+    19.3
+   ],
+   "gated": false
+  },
+  "knee_flexion": {
+   "range_deg": [
+    -1.0,
+    82.2
+   ],
+   "gate_range_deg": [
+    -1.0,
+    104.9
+   ],
+   "natural_extremes_deg": [
+    -0.0,
+    104.9
+   ],
+   "binding": [
+    "clinical",
+    "envelope"
+   ],
+   "clinical_deg": [
+    -1.0,
+    137.7
+   ],
+   "clinical_source": "soucie2011",
+   "clinical_note": "knee extension 1.0, flexion 137.7 (men 20-44)",
+   "envelope_source": "capture",
+   "envelope_note": "the capture's own envelope",
+   "capture_p0.1_p99.9_deg": [
+    -0.0,
+    77.2
+   ],
+   "rig_clips_p0.1_p99.9_deg": [
+    1.6,
+    136.7
+   ],
+   "gated": false
+  },
+  "knee_rotation": {
+   "range_deg": [
+    -6.6,
+    6.3
+   ],
+   "gate_range_deg": [
+    -6.6,
+    6.3
+   ],
+   "natural_extremes_deg": [
+    -4.6,
+    2.2
+   ],
+   "binding": [
+    "envelope",
+    "envelope"
+   ],
+   "clinical_deg": null,
+   "clinical_source": null,
+   "clinical_note": "no clinical norm used",
+   "envelope_source": "capture",
+   "envelope_note": "a hinge in the suit's solver",
+   "capture_p0.1_p99.9_deg": [
+    -1.6,
+    1.3
+   ],
+   "rig_clips_p0.1_p99.9_deg": [
+    -13.7,
+    11.4
+   ],
+   "gated": false
+  },
+  "knee_varus": {
+   "range_deg": [
+    -5.4,
+    5.6
+   ],
+   "gate_range_deg": [
+    -5.4,
+    5.6
+   ],
+   "natural_extremes_deg": [
+    -1.3,
+    2.8
+   ],
+   "binding": [
+    "envelope",
+    "envelope"
+   ],
+   "clinical_deg": null,
+   "clinical_source": null,
+   "clinical_note": "no clinical norm used",
+   "envelope_source": "capture",
+   "envelope_note": "a hinge in the suit's solver",
+   "capture_p0.1_p99.9_deg": [
+    -0.4,
+    0.6
+   ],
+   "rig_clips_p0.1_p99.9_deg": [
+    -11.4,
+    8.8
+   ],
+   "gated": false
+  },
+  "neck_flexion": {
+   "range_deg": [
+    -45.0,
+    45.0
+   ],
+   "gate_range_deg": [
+    -45.0,
+    45.0
+   ],
+   "natural_extremes_deg": [
+    -60.7,
+    44.4
+   ],
+   "binding": [
+    "clinical",
+    "clinical"
+   ],
+   "clinical_deg": [
+    -45.0,
+    45.0
+   ],
+   "clinical_source": "aaos1994",
+   "clinical_note": "cervical extension 45, flexion 45",
+   "envelope_source": "capture",
+   "envelope_note": "the capture's own envelope",
+   "capture_p0.1_p99.9_deg": [
+    -46.6,
+    40.2
+   ],
+   "rig_clips_p0.1_p99.9_deg": [
+    -62.0,
+    42.2
+   ],
+   "gated": false
+  },
+  "neck_lateral": {
+   "range_deg": [
+    -27.4,
+    38.6
+   ],
+   "gate_range_deg": [
+    -29.8,
+    41.8
+   ],
+   "natural_extremes_deg": [
+    -29.8,
+    41.8
+   ],
+   "binding": [
+    "envelope",
+    "envelope"
+   ],
+   "clinical_deg": [
+    -45.0,
+    45.0
+   ],
+   "clinical_source": "aaos1994",
+   "clinical_note": "cervical lateral flexion 45",
+   "envelope_source": "capture",
+   "envelope_note": "the capture's own envelope",
+   "capture_p0.1_p99.9_deg": [
+    -22.4,
+    33.6
+   ],
+   "rig_clips_p0.1_p99.9_deg": [
+    -13.8,
+    29.1
+   ],
+   "gated": false
+  },
+  "neck_twist": {
+   "range_deg": [
+    -60.0,
+    48.9
+   ],
+   "gate_range_deg": [
+    -60.0,
+    59.0
+   ],
+   "natural_extremes_deg": [
+    -106.0,
+    59.0
+   ],
+   "binding": [
+    "clinical",
+    "envelope"
+   ],
+   "clinical_deg": [
+    -60.0,
+    60.0
+   ],
+   "clinical_source": "aaos1994",
+   "clinical_note": "cervical rotation 60",
+   "envelope_source": "capture",
+   "envelope_note": "the capture's own envelope",
+   "capture_p0.1_p99.9_deg": [
+    -96.0,
+    43.9
+   ],
+   "rig_clips_p0.1_p99.9_deg": [
+    -70.5,
+    71.2
+   ],
+   "gated": false
+  },
+  "shoulder_elevation": {
+   "range_deg": [
+    0.0,
+    110.6
+   ],
+   "gate_range_deg": [
+    0.0,
+    130.8
+   ],
+   "natural_extremes_deg": [
+    0.0,
+    130.8
+   ],
+   "binding": [
+    "clinical",
+    "envelope"
+   ],
+   "clinical_deg": [
+    0.0,
+    168.8
+   ],
+   "clinical_source": "soucie2011",
+   "clinical_note": "shoulder flexion 168.8 (men 20-44)",
+   "envelope_source": "capture",
+   "envelope_note": "the capture's own envelope",
+   "capture_p0.1_p99.9_deg": [
+    0.3,
+    105.6
+   ],
+   "rig_clips_p0.1_p99.9_deg": [
+    4.9,
+    132.5
+   ],
+   "gated": true
+  },
+  "shoulder_plane": {
+   "range_deg": [
+    -45.0,
+    130.9
+   ],
+   "gate_range_deg": [
+    -45.0,
+    133.9
+   ],
+   "natural_extremes_deg": [
+    -81.9,
+    133.9
+   ],
+   "binding": [
+    "clinical",
+    "envelope"
+   ],
+   "clinical_deg": [
+    -45.0,
+    135.0
+   ],
+   "clinical_source": "aaos1994",
+   "clinical_note": "horizontal abduction 45, horizontal adduction 135 (applies above 45 degrees of elevation)",
+   "envelope_source": "capture",
+   "envelope_note": "the capture's own envelope",
+   "capture_p0.1_p99.9_deg": [
+    -68.1,
+    125.9
+   ],
+   "rig_clips_p0.1_p99.9_deg": [
+    -65.6,
+    93.4
+   ],
+   "gated": true
+  },
+  "shoulder_rotation": {
+   "range_deg": [
+    -90.0,
+    70.0
+   ],
+   "gate_range_deg": [
+    -90.0,
+    70.0
+   ],
+   "natural_extremes_deg": null,
+   "binding": [
+    "clinical",
+    "clinical"
+   ],
+   "clinical_deg": [
+    -90.0,
+    70.0
+   ],
+   "clinical_source": "aaos1994",
+   "clinical_note": "external rotation 90, internal rotation 70",
+   "envelope_source": "clinical",
+   "envelope_note": "the suit's arm roll is unreliable: its upper-arm roll needs a 32 degree functional calibration to meet its own elbow's hinge, and its hand roll is 130-150 degrees off the paddle; held to its own envelope, a palm-forward forehand on the paddle's evidence leaves the shoulder out of range",
+   "capture_p0.1_p99.9_deg": [
+    -48.1,
+    104.2
+   ],
+   "rig_clips_p0.1_p99.9_deg": [
+    -68.7,
+    63.7
+   ],
+   "gated": true
+  },
+  "spine_flexion": {
+   "range_deg": [
+    -17.8,
+    41.8
+   ],
+   "gate_range_deg": [
+    -20.2,
+    43.5
+   ],
+   "natural_extremes_deg": [
+    -20.2,
+    43.5
+   ],
+   "binding": [
+    "envelope",
+    "envelope"
+   ],
+   "clinical_deg": [
+    -25.0,
+    80.0
+   ],
+   "clinical_source": "aaos1994",
+   "clinical_note": "thoracolumbar extension 25, flexion 80",
+   "envelope_source": "capture",
+   "envelope_note": "the capture's own envelope",
+   "capture_p0.1_p99.9_deg": [
+    -12.8,
+    36.8
+   ],
+   "rig_clips_p0.1_p99.9_deg": [
+    -3.6,
+    69.5
+   ],
+   "gated": true
+  },
+  "spine_lateral": {
+   "range_deg": [
+    -23.7,
+    27.5
+   ],
+   "gate_range_deg": [
+    -25.4,
+    27.5
+   ],
+   "natural_extremes_deg": [
+    -25.4,
+    25.2
+   ],
+   "binding": [
+    "envelope",
+    "envelope"
+   ],
+   "clinical_deg": [
+    -35.0,
+    35.0
+   ],
+   "clinical_source": "aaos1994",
+   "clinical_note": "thoracolumbar lateral flexion 35",
+   "envelope_source": "capture",
+   "envelope_note": "the capture's own envelope",
+   "capture_p0.1_p99.9_deg": [
+    -18.7,
+    22.5
+   ],
+   "rig_clips_p0.1_p99.9_deg": [
+    -27.8,
+    26.1
+   ],
+   "gated": true
+  },
+  "spine_twist": {
+   "range_deg": [
+    -21.8,
+    40.2
+   ],
+   "gate_range_deg": [
+    -25.2,
+    40.2
+   ],
+   "natural_extremes_deg": [
+    -25.2,
+    39.2
+   ],
+   "binding": [
+    "envelope",
+    "envelope"
+   ],
+   "clinical_deg": [
+    -45.0,
+    45.0
+   ],
+   "clinical_source": "aaos1994",
+   "clinical_note": "thoracolumbar rotation 45",
+   "envelope_source": "capture",
+   "envelope_note": "the capture's own envelope",
+   "capture_p0.1_p99.9_deg": [
+    -16.8,
+    35.2
+   ],
+   "rig_clips_p0.1_p99.9_deg": [
+    -42.1,
+    36.6
+   ],
+   "gated": true
+  },
+  "wrist_deviation": {
+   "range_deg": [
+    -30.0,
+    20.0
+   ],
+   "gate_range_deg": [
+    -30.0,
+    20.0
+   ],
+   "natural_extremes_deg": [
+    -63.9,
+    82.6
+   ],
+   "binding": [
+    "clinical",
+    "clinical"
+   ],
+   "clinical_deg": [
+    -30.0,
+    20.0
+   ],
+   "clinical_source": "aaos1994",
+   "clinical_note": "ulnar 30, radial 20",
+   "envelope_source": "capture",
+   "envelope_note": "the capture's own envelope",
+   "capture_p0.1_p99.9_deg": [
+    -41.9,
+    69.6
+   ],
+   "rig_clips_p0.1_p99.9_deg": [
+    -50.9,
+    82.5
+   ],
+   "gated": true
+  },
+  "wrist_flexion": {
+   "range_deg": [
+    -57.9,
+    40.5
+   ],
+   "gate_range_deg": [
+    -70.0,
+    49.7
+   ],
+   "natural_extremes_deg": [
+    -71.7,
+    49.7
+   ],
+   "binding": [
+    "envelope",
+    "envelope"
+   ],
+   "clinical_deg": [
+    -70.0,
+    80.0
+   ],
+   "clinical_source": "aaos1994",
+   "clinical_note": "extension 70, flexion 80",
+   "envelope_source": "capture",
+   "envelope_note": "the capture's own envelope",
+   "capture_p0.1_p99.9_deg": [
+    -52.9,
+    35.5
+   ],
+   "rig_clips_p0.1_p99.9_deg": [
+    -83.8,
+    44.9
+   ],
+   "gated": true
+  }
+ },
+ "range_method": "Per anatomical angle (lib.environment.actors.motion.anatomy, each skeleton in its own calibrated frame), the cited clinical range intersected with the natural envelope widened by 5 degrees. The envelope is the raw capture's p0.1-p99.9 over both sides (59,154 frames; the p0.5-p99.5 band cut the real lunges: hip flexion p99.5 47 degrees against recorded lunges to 95), except where the suit's estimate does not describe the rig ('envelope_source'): the rigs' own authored clips, or the clinical range alone. The shoulder's plane of elevation is bounded only above 45 degrees of elevation. 'gated' marks the angles the motion gates hold (the arm, clavicle and spine, which the arm IK controls); the rest are reported.",
+ "gate_method": "The motion gates' joint-limit check uses 'gate_range_deg', not 'range_deg' (the arm IK's target). Per side: where the clinical range binds, the clinical bound (hard); where the natural envelope binds, the furthest the envelope's source went ('natural_extremes_deg': the capture's or the rigs' clips' minimum and maximum), capped by the clinical bound. Joints-v1's gate counted every frame outside the p0.1-p99.9 band plus 5 degrees, a percentile membership that a union over every gated angle on both sides fails on natural frames by construction (datagen-bodies' donor build, 2026-10-07: 15.7% of conditioned capture frames); excursions are now judged by magnitude against the natural extremes.",
+ "hinge_azimuth_deg": {
+  "ActorCore_Party_M_0001@2.0.2": -3.1,
+  "ActorCore_Uniform_M_0001@1.0.1": 3.5,
+  "rokoko_capture": {
+   "R": -32.1,
+   "L": -52.2
+  },
+  "note": "where each skeleton's elbow hinge sits in its rest pose: the rigs from their 26 authored clips (constant to 0.1 degree over 5,500 bent-elbow frames); the capture from its bent-elbow frames' median bend direction"
+ }
+}

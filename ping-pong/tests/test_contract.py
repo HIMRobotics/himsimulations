@@ -66,8 +66,11 @@ CUSTOMER_FORBIDDEN = (
     re.compile(r"\bENG-\d+\b"),
     re.compile(r"[A-Za-z0-9._%+-]+@antioch\.com"),
     re.compile(r"console\.(preview\.)?antioch\.com"),
+    re.compile(r"/home/[a-z]"),
+    re.compile(r"\breports/[a-z0-9_-]+\.md"),
 )
-"""Text that must never ship to HIM: another organization's id, Antioch-internal links and trackers, emails."""
+"""Text that must never ship to HIM: another organization's id, Antioch-internal links, trackers and reports, emails,
+local paths."""
 
 
 def _manifest() -> dict:
@@ -200,3 +203,13 @@ def test_nothing_internal_ships_to_the_customer() -> None:
         text = path.read_text(encoding="utf-8", errors="replace")
         offenders += [f"{path.relative_to(REPOSITORY)}: {match.group(0)}" for pattern in CUSTOMER_FORBIDDEN for match in pattern.finditer(text)]
     assert not offenders, offenders
+
+
+def test_docs_list_every_pinned_asset() -> None:
+    """``docs/assets.md`` names every asset and its pinned sha256, so the documentation never drifts from the pins."""
+
+    text = (PROJECT / "docs" / "assets.md").read_text(encoding="utf-8")
+    for asset in ASSETS.values():
+        assert f"`{asset.name}@{asset.version}`" in text, asset.name
+        if asset.sha256 is not None:
+            assert asset.sha256 in text, f"{asset.name}: docs/assets.md lacks sha256 {asset.sha256}"
