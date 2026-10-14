@@ -353,7 +353,7 @@ PADDLE_INERTIA_DERIVATION = (
     "derived: uniform slab of the cited 157 x 150 x 13.6 mm head at the cited 0.17 kg effective mass, "
     "about the blade centre (I = m (a^2 + b^2) / 12); hand coupling not included; range is judgement"
 )
-"""How the paddle inertia defaults were obtained (the same slab the calibration harness uses)."""
+"""How the paddle inertia defaults were obtained."""
 
 PADDLE_INERTIA_XX = 3.214e-4
 """0.17 (0.150^2 + 0.0136^2) / 12, kg m^2: about the handle axis."""
@@ -946,18 +946,3 @@ def nominal_params(path: Path | str | None = PRIORS_PATH, *, speed_curves: bool 
     """The nominal parameter set: priors-file values where present, provisional defaults elsewhere."""
 
     return load_priors(path).nominal(speed_curves=speed_curves)
-
-
-def sample_params(
-    rng: np.random.Generator, names: Iterable[str] | None = None, path: Path | str | None = PRIORS_PATH, *, speed_curves: bool = True
-) -> BallTableParams:
-    """
-    A randomised parameter set, uniform within each parameter's range.
-
-    :param rng: Random generator; the draw is reproducible from its seed.
-    :param names: Parameters to randomise; default all with a range of non-zero width.
-    :param path: The priors file to read ranges from.
-    :param speed_curves: Attach the priors' speed curves, scaled by their scalars.
-    """
-
-    return load_priors(path).sample(rng, names, speed_curves=speed_curves)

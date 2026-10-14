@@ -1,13 +1,12 @@
 """
-The game ball integrated by the adapter itself (``ball_integrator="rk4"``), not by PhysX.
+The game ball integrated by the adapter itself (``ball_integrator="rk4"``, the replay's), not by PhysX.
 
-Under the default ``physx`` integrator PhysX advances the game ball at the game
-step (1/3840 s) by semi-implicit Euler under gravity plus the air force the
-stepper applies, so its flight error is first order in the step: the
-calibration's C8 convergence gate fails at the production step, and the step
-had to be small (3840 Hz) for C1, C2 and C10 to pass. Each PhysX step then costs
-about 0.5 ms of engine time on the fast production hosts and 1.5 ms on the slow
-ones, beyond the adapter's own work (``reports/perf.md``).
+Under the ``physx`` integrator PhysX advances the game ball at the game step
+(1/3840 s) by semi-implicit Euler under gravity plus the air force the stepper
+applies, so its flight error is first order in the step: it does not converge
+with the step the way the oracle does, and the step has to be small (3840 Hz)
+for the calibrated flight, drag and parity tests to pass. Each PhysX step then
+costs 0.5-1.5 ms of engine time, beyond the adapter's own work.
 
 Every ball contact is already the adapter's own (the hybrid paddle, table, net,
 posts and clamps, undercarriage, floor, room and body sweeps), so PhysX never
@@ -65,7 +64,7 @@ class IntegratedBodies:
         self.marker_writes = 0
         self.integrated_s = 0.0
         self.trace: list[Array] | None = None
-        """When a list, every integration appends the ball's state after it (the calibration panel logs every game step)."""
+        """When a list, every integration appends the ball's state after it (to log every game step)."""
 
     # ---- engine lifecycle ------------------------------------------------------------------
 

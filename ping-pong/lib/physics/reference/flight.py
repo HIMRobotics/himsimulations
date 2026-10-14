@@ -412,29 +412,6 @@ class FlightSegment:
     grazes: int = 0
 
 
-class StaticClearance(Protocol):
-    """
-    A static surface's sign-invariance radius: an optional method of a :class:`GapEvent`.
-
-    ``clearance(state, gap)`` is a distance (m) the ball's centre may move from ``state`` without the gap's sign
-    changing, at any time. For a gap that is 1-Lipschitz in the centre's position (a distance minus the radius) it is
-    ``|gap|``. Surfaces that move or whose gap depends on time or velocity must not have it.
-    """
-
-    def clearance(self, state: Sequence[float], gap: float) -> float: ...
-
-
-class MovingClearance(Protocol):
-    """
-    A moving surface's reach bound for adaptive steps: an optional method of a :class:`GapEvent`.
-
-    ``clearance_between(t0, t1, state)`` is a distance (m) the ball's centre may move from ``state`` during
-    ``[t0, t1]`` without reaching the surface (``math.inf`` when it is inactive then; 0 when unknown).
-    """
-
-    def clearance_between(self, t0: float, t1: float, state: Sequence[float]) -> float: ...
-
-
 CLEAR_MARGIN_M: float = 1e-3
 """Adaptive steps: clearance kept beyond the ball's reach over a long step, m."""
 
@@ -776,25 +753,6 @@ def propagate(model: FlightModel, state0: StateLike, t0: float, times: ArrayLike
         y = rk4_step(model, y, float(h))
         out[i + 1] = y
     return out[index]
-
-
-def propagate_batch(model: FlightModel, states0: ArrayLike, t0: float, times: ArrayLike, *, dt: float = DEFAULT_DT) -> NDArray[np.float64]:
-    """
-    :func:`propagate` for a batch of initial states integrated in lockstep.
-
-    :param states0: Initial states, shape ``(B, 9)``.
-    :return: Array of shape ``(B, len(times), 9)``.
-    """
-
-    y = np.array(states0, dtype=float).reshape(-1, STATE_SIZE)
-    requested = np.asarray(times, dtype=float).reshape(-1)
-    steps, index = _step_plan(t0, requested, dt)
-    out = np.empty((y.shape[0], steps.size + 1, STATE_SIZE))
-    out[:, 0] = y
-    for i, h in enumerate(steps):
-        y = rk4_step_array(model, y, float(h))
-        out[:, i + 1] = y
-    return out[:, index]
 
 
 def flight_events(params: BallTableParams) -> tuple[TableTop, Net, Floor]:

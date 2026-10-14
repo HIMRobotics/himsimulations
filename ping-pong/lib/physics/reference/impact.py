@@ -156,20 +156,6 @@ def _vec(value: ArrayLike) -> NDArray[np.float64]:
     return out
 
 
-def contact_velocity(velocity: ArrayLike, spin: ArrayLike, normal: ArrayLike, radius: float) -> NDArray[np.float64]:
-    """
-    Velocity of the ball's material point touching a surface with unit normal ``normal``.
-
-    :param velocity: Ball centre velocity, m/s.
-    :param spin: Ball angular velocity, rad/s.
-    :param normal: Unit normal from the surface into the ball.
-    :param radius: Ball radius, m.
-    :return: ``v + omega x (-R n)``, m/s.
-    """
-
-    return _vec(velocity) + np.cross(_vec(spin), -radius * _vec(normal))
-
-
 def point_effective_mass(mass: float, inertia: ArrayLike, offset: ArrayLike, direction: ArrayLike) -> float:
     """
     Effective mass of a free rigid body at a point, along a direction.

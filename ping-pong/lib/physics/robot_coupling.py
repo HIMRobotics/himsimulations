@@ -1,5 +1,5 @@
 """
-The robot's paddle and the calibrated GPU ball, coupled both ways, once per PhysX step (design v2, section 4).
+The robot's paddle and the calibrated GPU ball, coupled both ways, once per PhysX step.
 
 :class:`RobotBallCoupling` owns the ball physics (:class:`lib.physics.vectorized.build.BallPhysics`: the
 graph-captured :class:`lib.physics.vectorized.dense.DenseBallBatch`, the bounce predictor and the inverse law) for
@@ -11,11 +11,11 @@ ended, ``[t - h, t]``. For that step it:
    z = across): the blade centre's position and orientation, in the table frame (``x_table = x_world -
    env_origin - table_origin``) and the law's blade axes (X across, Y tip, Z forehand: ``paddle_to_game``), and its
    linear velocity only for ``track="hermite"``. The angular velocity is never read (the slerp needs only the two
-   orientations); a velocity read costs about as much as the ball (robot-env's profile ``71bf3ab2``: about 10 ms per
-   physics step at 4,096 environments), so ``track="line"`` reads no velocity at all;
+   orientations); a velocity read costs about as much as the ball (about 10 ms per physics step at 4,096
+   environments), so ``track="line"`` reads no velocity at all;
 2. **builds the blade's motion** over the step from its two end states: a cubic Hermite through the positions and
    velocities with slerp at constant angular velocity (``track="hermite"``), or PhysX's own straight line at
-   ``(p1 - p0) / h`` (``"line"``, the G0.4 A/B); a blade whose env was reset this step is parked at its new pose
+   ``(p1 - p0) / h`` (``"line"``); a blade whose env was reset this step is parked at its new pose
    (``p0 = p1``, ``v = 0``), and the opponent's blade likewise when it teleports;
 3. **the contact law's paddle**: with ``compliance="articulated"``, ``J M^-1 J^T`` of the paddle link about the blade
    centre, with every actuator's armature added to PhysX's mass matrix (which leaves it out: 0.165 kg instead of the
@@ -43,14 +43,14 @@ ended, ``[t - h, t]``. For that step it:
    - ``"direct"``: one write per physics step, for every environment (zeros where nothing pushed), straight into
      ``robot.root_view.apply_forces_and_torques_at_position(..., position_data=None, is_global=True)`` (a global force
      at the link's centre of mass and a global torque), with no refresh. PhysX applies only the last force write before
-     a physics step and clears it after the step (measured, and by robot-env), so the composer must stay unused: the
+     a physics step and clears it after the step (measured), so the composer must stay unused: the
      write is deferred into the articulation's ``write_data_to_sim`` (after Lab's own, which then writes no force, and
      after every :meth:`~RobotBallCoupling.add_external` of the step), and a step on which the composer was written
      raises.
 
 Negative controls and A/Bs run through the same path (:class:`CouplingConfig`): ``track="line"``,
 ``blade_lag_steps > 0`` (the ball sees the blade where it was), a batch built with ``dt = h`` (no sub-steps),
-``angular_torque_term=True`` (v1's ``-L/h`` torque added) and ``wrench="direct_unguarded"`` (the reaction written to
+``angular_torque_term=True`` (a ``-L/h`` torque added) and ``wrench="direct_unguarded"`` (the reaction written to
 the view at once, which a later composer write overwrites).
 
 Isaac Lab and torch are imported only when used, so this module imports anywhere.
@@ -103,7 +103,7 @@ class CouplingConfig:
     :ivar track: ``hermite`` or ``line`` (PhysX's straight line at ``(p1 - p0) / h``).
     :ivar blade_lag_steps: The ball sees the robot's blade this many physics steps late (0: on time; a negative
         control otherwise).
-    :ivar angular_torque_term: Add v1's ``-sum dL_spin / h`` to the reaction torque (a negative control).
+    :ivar angular_torque_term: Add ``-sum dL_spin / h`` to the reaction torque (a negative control).
     :ivar timing: Synchronise CUDA around :meth:`RobotBallCoupling.step` to time it (``wall_s``).
     :ivar log_capacity: Contacts per environment per physics step the slice holds.
     :ivar jacobian: Where the articulated compliance's paddle Jacobian comes from: ``physx`` (Lab's
@@ -326,28 +326,6 @@ def contact_compliance(a: Tensor, b: Tensor, c: Tensor, r: Tensor) -> Tensor:
     return a + mat_mul(b, skew) - mat_mul(skew, b.transpose(-1, -2)) - mat_mul(mat_mul(skew, c), skew)
 
 
-@dataclass(frozen=True)
-class ChainJoint:
-    """
-    One authored joint on the path from the articulation's root link to the paddle (USD ``physics:*`` attributes).
-
-    The child link's frame is ``parent * (local_pos0, local_rot0) * rotation(axis, q) * (local_pos1, local_rot1)^-1``.
-    """
-
-    name: str | None
-    """Lab's joint name (``None`` for a fixed joint)."""
-    parent_body: str
-    child_body: str
-    type: Literal["revolute", "fixed"]
-    local_pos0: tuple[float, float, float]
-    local_rot0: tuple[float, float, float, float]
-    """``(w, x, y, z)``, in the parent link's frame."""
-    local_pos1: tuple[float, float, float]
-    local_rot1: tuple[float, float, float, float]
-    """``(w, x, y, z)``, in the child link's frame."""
-    axis: Literal["X", "Y", "Z"] = "X"
-
-
 def _wxyz_to_matrix(q: Sequence[float]) -> Any:
     w, x, y, z = (float(v) for v in q)
     return quat_xyzw_to_matrix(torch.tensor([x, y, z, w], dtype=torch.float64))
@@ -363,8 +341,9 @@ class PaddleJacobian:
     the root's orientation and the joint positions (a Jacobian or velocity fetch costs a per-step refresh: about
     21 ms at 8,192 environments).
 
-    :param chain: The joints from the root link to the paddle, in that order: :class:`ChainJoint` or anything with its
-        fields (robot-env's ``lib.hardware.robots.g1.kinematics.JointFrame``, read from the live stage).
+    :param chain: The joints from the root link to the paddle, in that order: objects with ``name``, ``parent_body``,
+        ``child_body``, ``type``, ``local_pos0``, ``local_rot0``, ``local_pos1``, ``local_rot1`` and ``axis`` (the
+        authored USD ``physics:*`` joint attributes, read from the live stage).
     :param joint_names: The articulation's joint names (Lab's order: the Jacobian's joint columns).
     :param floating: A floating base (six base columns first).
     :param base_point: The root point whose linear velocity the base columns carry, in the root link's frame (PhysX:
@@ -648,7 +627,7 @@ class RobotBallCoupling:
     :param params: Ball and table physics: one set for every environment or one per environment (default nominal).
     :param physics: A ball physics built already (``BallPhysics.create(..., blades=robot_blades + opponent, log=True,
         log_history=False, compliance=True)``); built from ``params`` and ``config`` when ``None``.
-    :param chain: The joints from the root link to the paddle (:class:`ChainJoint`, or robot-env's ``JointFrame``), for
+    :param chain: The joints from the root link to the paddle (see :class:`PaddleJacobian`), for
         ``jacobian="torch"``; checked against PhysX's Jacobian once, after the first physics step.
     :param reach: A ball closer than this to the blade centre at a step's end gets the arm's compliance computed, m
         (it covers a step's relative motion at 50 m/s, the blade's half-size and the ball's radius).
@@ -858,9 +837,8 @@ class RobotBallCoupling:
         Compile and capture every phase now: the coupling's ``prepare`` and ``collect``, and each of the ball batch's
         phases and pair tiers (:meth:`lib.physics.vectorized.dense.DenseBallBatch.warm_up`).
 
-        Without this, a phase compiles on its first use, which on CUDA meant about 240 s inside the first rally pass's
-        steps (robot-train's ``s2t-rally-tput`` measured 208 ms per physics step there against 15 ms afterwards;
-        ``reports/physics-ref.md`` Addendum 17).
+        Without this, a phase compiles on its first use, which on CUDA means about 240 s inside the first rally pass's
+        steps (208 ms per physics step there against 15 ms afterwards).
 
         Each phase runs once out of turn on whatever the buffers hold, and every buffer is put back after it, so the
         coupling's state and every later result are unchanged. It is idempotent: a captured phase is not redone. It
@@ -1343,7 +1321,6 @@ __all__ = [
     "BLADE_EDGE_REGION",
     "PADDLE_TO_GAME",
     "PARKED_OPPONENT",
-    "ChainJoint",
     "CouplingConfig",
     "PaddleJacobian",
     "Reaction",

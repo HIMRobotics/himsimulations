@@ -51,8 +51,6 @@ from lib.physics.vectorized.params import VecParams
 
 Tensor = Any
 
-PaddleSegments = BladeTrack
-"""Every blade's motion over one step (see :class:`lib.physics.vectorized.geometry.BladeTrack`)."""
 
 KIND_OF_STATIC = ("table", "net", "floor", "table", "net", "net", "net", "net")
 """Each static surface's contact kind (posts and clamps belong to the net assembly)."""
@@ -559,16 +557,4 @@ class BallBatch:
         self._static[rows] = static_gaps(state[:, :3], params, rows)
 
 
-__all__ = [
-    "ENDED_OVERFLOW",
-    "ENDED_REST",
-    "ENDED_TERMINAL",
-    "BallBatch",
-    "EventLog",
-    "PaddleSegments",
-    "advance_fn",
-    "contact_fn",
-    "gaps_fn",
-    "illinois_fn",
-    "pair_gap_fn",
-]
+__all__ = ["ENDED_OVERFLOW", "ENDED_REST", "ENDED_TERMINAL", "BallBatch", "EventLog", "advance_fn", "contact_fn", "gaps_fn", "illinois_fn", "pair_gap_fn"]

@@ -39,7 +39,7 @@ from typing import Any
 
 from lib.physics.vectorized._torch import torch
 from lib.physics.vectorized.flight import rk4_step
-from lib.physics.vectorized.geometry import STATIC_COUNT, BladeTrack, _quat_product, _rotvec, blade_gap, blade_state, quat_axes, static_gaps
+from lib.physics.vectorized.geometry import STATIC_COUNT, BladeTrack, _quat_product, _rotvec, static_gaps
 from lib.physics.vectorized.pairs import COLUMNS, converged_fn, illinois_columns_fn, pair_constants
 from lib.physics.vectorized.params import VecParams
 from lib.physics.vectorized.sim import ENDED_OVERFLOW, ENDED_REST, ENDED_TERMINAL, KIND_OF_STATIC, EventLog, contact_fn, gaps_fn
@@ -112,70 +112,6 @@ def detect_fn(
         fired = torch.zeros_like(fired)
         hit = torch.zeros_like(hit)
     return (y1, g1, hit, fired.reshape(-1), state, static_cache, active, ended)
-
-
-def pair_gap_one(params: VecParams, ys: Tensor, x: Tensor, row: Tensor, start: Tensor, surface: Tensor, blades: tuple[Tensor, ...] | None, h: float) -> Tensor:
-    """
-    Each pair's gap (continuous form) at ``x`` into its step on the RK4 path from ``ys``: the value of
-    :func:`lib.physics.vectorized.sim.pair_gap_fn`, with only the pair's own blade evaluated, so that every array
-    keeps the pairs' length and a compiler fuses a whole Illinois step into a few kernels.
-    """
-
-    y = rk4_step(ys, x, params, row)
-    static = static_gaps(y[:, :3], params, row, continuous=True).gather(1, surface.clamp(max=STATIC_COUNT - 1)[:, None])[:, 0]
-    if blades is None:
-        return static
-    blade = (surface - STATIC_COUNT).clamp(min=0)
-    position, orientation, _velocity, _omega = blade_state(blades, h, (start + x) / h, row, blade)
-    on_blade = blade_gap(y[:, :3], position, quat_axes(orientation), params, row)
-    return torch.where(surface >= STATIC_COUNT, on_blade, static)
-
-
-def illinois_block_fn(
-    params: VecParams,
-    ys: Tensor,
-    row: Tensor,
-    start: Tensor,
-    surface: Tensor,
-    used: Tensor,
-    blades: tuple[Tensor, ...] | None,
-    h: float,
-    lo: Tensor,
-    hi: Tensor,
-    g_lo: Tensor,
-    g_hi: Tensor,
-    side: Tensor,
-    steps: int,
-    tolerance: float,
-) -> tuple[Tensor, ...]:
-    """
-    ``steps`` (a multiple of 4) Illinois steps of :func:`lib.physics.vectorized.sim.illinois_fn` (every fourth a
-    bisection), then whether every used bracket is within ``tolerance`` (``BallBatch``'s exit test).
-    """
-
-    for iteration in range(steps):
-        width = hi - lo
-        bisect = 0.5 * (lo + hi)
-        if iteration % 4 != 3:
-            guess = hi - g_hi * width / (g_hi - g_lo)
-            ok = torch.isfinite(guess) & (guess > lo) & (guess < hi)
-            x = torch.where(ok, guess, bisect)
-        else:
-            x = bisect
-        g = pair_gap_one(params, ys, x, row, start, surface, blades, h)
-        left = g >= 0.0
-        g_hi = torch.where(left & (side > 0.0), 0.5 * g_hi, g_hi)
-        g_lo = torch.where(~left & (side < 0.0), 0.5 * g_lo, g_lo)
-        done = width <= 0.0
-        lo, hi, g_lo, g_hi = (
-            torch.where(done, lo, torch.where(left, x, lo)),
-            torch.where(done, hi, torch.where(left, hi, x)),
-            torch.where(done, g_lo, torch.where(left, g, g_lo)),
-            torch.where(done, g_hi, torch.where(left, g_hi, g)),
-        )
-        side = torch.where(left, torch.ones_like(side), -torch.ones_like(side))
-    converged = (~used | ((hi - lo) <= tolerance)).all()
-    return lo, hi, g_lo, g_hi, side, converged
 
 
 def roots_prep_fn(g0: Tensor, g1: Tensor, start: Tensor, flat: Tensor, rank: Tensor, base: Tensor, h: float, capacity: int) -> tuple[Tensor, ...]:
@@ -789,7 +725,7 @@ class DenseBallBatch:
         Compile and capture every phase now: the prologue, both detects, each pair tier's roots, roots_more and
         roots_finish, and apply. On their first use they would otherwise pay that inside some later step. A phase
         compiles on its first call, which on CUDA takes tens of seconds for the root loop; a robot-ball coupling's first
-        rally pass spent about 240 s here (``reports/physics-ref.md`` Addendum 17).
+        rally pass spends about 240 s here.
 
         Each phase runs once out of turn, and the batch's buffers are put back after it, so the batch's state and every
         later result are what they would have been without this call. Already captured phases are skipped (idempotent).
@@ -922,15 +858,4 @@ class DenseBallBatch:
         return self._log
 
 
-__all__ = [
-    "DenseBallBatch",
-    "apply_fn",
-    "blade_motion",
-    "detect_fn",
-    "illinois_block_fn",
-    "log_fn",
-    "pair_gap_one",
-    "prologue_fn",
-    "roots_finish_fn",
-    "roots_prep_fn",
-]
+__all__ = ["DenseBallBatch", "apply_fn", "blade_motion", "detect_fn", "log_fn", "prologue_fn", "roots_finish_fn", "roots_prep_fn"]

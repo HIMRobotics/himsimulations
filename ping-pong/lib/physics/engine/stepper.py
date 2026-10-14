@@ -1,11 +1,11 @@
 """
-What runs every physics step of a game: air forces, the paddle drive, the hybrid contacts, and contact bookkeeping.
+What runs every physics step of a replay: air forces, the paddle drive, the hybrid contacts, and contact bookkeeping.
 
 One physics callback (Isaac Sim ``World.add_physics_callback``) reads the
 ball and both paddles once through the raw physics-tensor view with
 preallocated buffers (on CPU the warp arrays' numpy views are zero-copy, so a
-step allocates nothing; the experimental ``RigidPrim`` wrapper costs about 1.5 ms
-per step against 0.4 ms for this path, measured on production), then:
+step allocates nothing; the ``RigidPrim`` wrapper costs about 1.5 ms per step
+against 0.4 ms for this path), then:
 
 1. recognises the engine-resolved contact of the step just taken (table, net,
    floor) from its velocity change, and checks for tunnelling;
@@ -16,14 +16,14 @@ per step against 0.4 ms for this path, measured on production), then:
    (:meth:`lib.physics.reference.flight.FlightModel.wrench`);
 4. commands each paddle the velocity that lands it on its target pose at the
    end of the step (a dead-beat velocity drive of a dynamic body); the target
-   comes from the paddle segment the game loop sets once per render tick.
+   comes from the paddle segment the replay loop sets once per render tick.
 
 Exceptions inside a Kit physics callback are swallowed by Kit, so the
-callback records the first one and the game loop raises it.
+callback records the first one and the replay loop raises it.
 
-**Ball integrator.** With ``ball_integrator="physx"`` (the default) PhysX
-integrates the ball at the game step and the callback runs once per PhysX step.
-With ``"rk4"`` the adapter integrates the game ball itself
+**Ball integrator.** With ``ball_integrator="physx"`` PhysX integrates the
+ball at the game step and the callback runs once per PhysX step. With
+``"rk4"`` (the replay's) the adapter integrates the game ball itself
 (:class:`lib.physics.engine.ball_integrator.IntegratedBodies`): PhysX steps
 only the paddles and retired balls, at a coarser engine step, and each PhysX
 callback runs the same per-step logic for every game step the engine step
@@ -1061,13 +1061,13 @@ class GamePhysics:
     def _blade_touch(self, actor: str, state: Array, acceleration: Array, t: float, dt: float) -> SweptContact | None:
         """
         The ball's first touch on one blade inside the step, resolved with the oracle's own blade state
-        (:func:`lib.physics.reference.blade.blade_touch`, physics-ref): the blade exact on its segment (knot included)
-        at the bisected touch time, the ball on its constant-acceleration path from the step's start, the face or the
-        rim of the outline, or (``settings.paddle.blade_edge``, the default) the blade's rounded edge, as the oracle's
-        ``simulate`` has it since physics Addendum 13: an edge touch is resolved with ``rim_contact`` and recorded with
-        region ``blade_edge``. A linear sweep between the step's two blade poses put the material point's velocity at the
-        touch off by up to 3.3 mm/s (the Hermite velocity is quadratic in time), and the outgoing ball by 2.4 mm/s
-        (datagen-core's ``ce654ebd9c366945``); with the shared state it agrees with the oracle to about 1e-7 m/s.
+        (:func:`lib.physics.reference.blade.blade_touch`): the blade exact on its segment (knot included) at the
+        bisected touch time, the ball on its constant-acceleration path from the step's start, the face or the rim of
+        the outline, or (``settings.paddle.blade_edge``, the default) the blade's rounded edge, as the oracle's
+        ``simulate`` has it: an edge touch is resolved with ``rim_contact`` and recorded with region ``blade_edge``. A
+        linear sweep between the step's two blade poses puts the material point's velocity at the touch off by up to
+        3.3 mm/s (the Hermite velocity is quadratic in time), and the outgoing ball by 2.4 mm/s; with the shared state
+        it agrees with the oracle to about 1e-7 m/s.
 
         :return: The contact (its fraction of the step), or ``None`` without a touch or when the ball is not approaching.
         """
@@ -1112,8 +1112,8 @@ class GamePhysics:
         Sweep one blade over the step ``[t, t + dt]``. A step that holds the paddle segment's contact knot is swept as two
         pieces, ``[t, t_knot]`` and ``[t_knot, t + dt]``, with the blade at the knot between them: the two sides of a knot
         turn at different angular velocities, and one linear sweep across it put the blade's normal and surface velocity
-        at contact off by up to 2e-5 rad and 1e-3 m/s (physics-ref's oracle replay of game-2, game-5 and smoke: outgoing
-        velocities 1.6e-3 to 2.5e-2 m/s from the oracle's whenever the contact step held a knot, 1e-7 to 2e-4 otherwise).
+        at contact off by up to 2e-5 rad and 1e-3 m/s (in replays checked against the oracle: outgoing velocities 1.6e-3
+        to 2.5e-2 m/s from the oracle's whenever the contact step held a knot, 1e-7 to 2e-4 otherwise).
         The returned contact's fraction is of the whole step.
         """
 
@@ -1198,7 +1198,7 @@ class GamePhysics:
 
     def _sweep_net(self, state: Array, t: float, dt: float) -> Array | None:
         """
-        The hybrid net assembly: the calibration harness's sweep of the ball against the net box and its posts and clamps,
+        The hybrid net assembly: the batched sweep of the ball against the net box and its posts and clamps,
         the earliest touch winning, resolved by the reference impact law (the net's region law; ``post_contact`` on the
         steel posts, ``fixture_contact`` on the clamps). The posts' and clamps' native colliders are filtered for the ball.
         """

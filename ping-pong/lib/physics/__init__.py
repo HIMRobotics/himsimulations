@@ -1,9 +1,13 @@
 """
-Physics: the parameter contract and the engine-independent reference model.
+The calibrated table-tennis ball physics.
 
-``params`` is the single source of truth for physics parameters, units, priors
-and randomisation ranges. ``reference`` is a pure numpy and scipy oracle (flight,
-impact, event-driven simulation, camera projection and flight fits) that every
-simulator backend and every trajectory fit is checked against. Nothing here
-imports Isaac; see ``README.md`` for the equations and conventions.
+- :mod:`.params` is the single source of truth for the physical parameters, their units and priors
+  (``data/priors.json``).
+- :mod:`.reference` is the pure numpy and scipy oracle: flight, impact law, contact geometry and event-driven
+  simulation. Every simulator backend is checked against it.
+- :mod:`.engine` realises the oracle in Isaac Sim for the replay (the per-step callback, hybrid contacts, rk4).
+- :mod:`.vectorized` is the oracle batched in torch on the GPU, and :mod:`.robot_coupling` couples it to a robot's
+  paddle in Isaac Lab.
+
+Nothing here imports Isaac at module scope. ``docs/physics.md`` explains the equations and conventions.
 """

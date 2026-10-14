@@ -28,9 +28,8 @@ at the first terminal event:
 **Cost.** The static surfaces of one parameter set are built once and reused
 (they are immutable), and the integrator evaluates a static gap only when the
 ball could have changed its sign (:mod:`lib.physics.reference.flight`): the
-same trajectory, bit for bit, at a fraction of the cost. A paddle given as a
-:class:`lib.physics.reference.paddle_track.PaddleTrack` is evaluated only near
-the blade. ``max_step`` (opt-in) takes long steps where nothing can be reached
+same trajectory, bit for bit, at a fraction of the cost. A paddle whose
+trajectory can bound where it is is evaluated only near the blade. ``max_step`` (opt-in) takes long steps where nothing can be reached
 and ``dt`` steps near every surface and blade; ``graze`` (opt-in) also finds
 touches that enter and leave between two step ends.
 """
@@ -40,7 +39,6 @@ from __future__ import annotations
 import math
 from collections.abc import Collection, Sequence
 from dataclasses import dataclass
-from typing import Any, cast
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
@@ -73,9 +71,6 @@ from lib.physics.reference.rolling import (
 )
 from lib.physics.reference.room import Room
 from lib.physics.reference.surfaces import Contact, Floor, PaddleFaces, ScriptedPaddle, Surface, TableTop
-
-TERMINAL_ALWAYS = ("rest", "out_of_bounds", "max_time", "max_events")
-"""Event kinds that always end a simulation."""
 
 
 @dataclass(frozen=True)
@@ -169,19 +164,6 @@ _SURFACE_CACHE: dict[tuple[int, bool, bool, bool], _CacheEntry] = {}
 _SURFACE_CACHE_SIZE = 16
 
 
-def static_surfaces(params: BallTableParams, *, fixtures: bool = True, undercarriage: bool = True, room: bool = False) -> tuple[Surface, ...]:
-    """
-    The static surfaces :func:`simulate` watches for one parameter set, built once and reused.
-
-    Parameter sets and surfaces are immutable, so a set seen again (by identity) reuses its surfaces.
-
-    :return: Table top, net, floor, then (``fixtures``) the board, posts and clamps and (``undercarriage``) the frame,
-        then (``room``) the room.
-    """
-
-    return _cached_surfaces(params, fixtures, undercarriage, room)[1]
-
-
 def _cached_surfaces(params: BallTableParams, fixtures: bool, undercarriage: bool, room: bool) -> _CacheEntry:
     key = (id(params), fixtures, undercarriage, room)
     entry = _SURFACE_CACHE.get(key)
@@ -239,26 +221,24 @@ def simulate(
     :param record_every: Keep every n-th flight step (events are always kept).
     :param max_events: Cap on contacts.
     :param fixtures: Include the table board (ends, sides, edges, underside), the net posts and the
-        clamps. False is the earlier oracle: the playing surface, the net box and the floor.
+        clamps. False: only the playing surface, the net box and the floor.
     :param undercarriage: With ``fixtures``, also include the table's apron, legs and frame (``kind = "frame"``).
-    :param room: Include the room's walls, ceiling and furniture (``kind = "wall"``). Off by default, as in
-        the calibration parity scene, whose long shots would otherwise reach a wall.
+    :param room: Include the room's walls, ceiling and furniture (``kind = "wall"``). Off by default.
     :param rolling: A slow rebound on the floor or the playing surface enters the sustained-rolling regime
         (:mod:`lib.physics.reference.rolling`): the ball slides, rolls against its rolling resistance and
-        stops, which is ``rest``. False is the earlier rule: any slow rebound from an upward-facing
-        surface ends the run at ``rest``.
+        stops, which is ``rest``. False: any slow rebound from an upward-facing surface ends the run at ``rest``.
     :param edge_pivot: A ball rolling off the table slower than ``sqrt(g R)`` across the edge pivots about it
         before it leaves (:func:`lib.physics.reference.rolling.pivot_off_edge`; a ``pivot`` event). False
         releases it into flight as its centre passes the edge.
     :param max_step: Opt-in adaptive steps: the longest step, s, taken where no surface or blade can be reached within
         it; every step near one is ``dt``. ``None`` (the default) keeps the fixed ``dt`` grid. A scripted paddle that
-        is not a :class:`lib.physics.reference.paddle_track.PaddleTrack` and has no windows keeps every step at ``dt``.
+        cannot bound where it is and has no windows keeps every step at ``dt``.
     :param clear_margin: Adaptive steps: clearance kept beyond the ball's reach over a long step, m.
     :param graze: Opt-in: search each ``dt`` step that ends clear of a surface, but came within its step's travel of it,
         for a touch inside the step (with or without ``max_step``).
     :param blade_edge: Paddles have their rounded edge (:class:`lib.physics.reference.surfaces.PaddleFaces`, the
-        contract's ``rim_contact``). False is the earlier face-only blade, through whose edge a ball passes (an A/B and
-        negative control: face touches are identical either way).
+        contract's ``rim_contact``). False: the face-only blade, through whose edge a ball passes (a control: face
+        touches are identical either way).
     :return: The trajectory and its events.
     """
 
@@ -422,72 +402,3 @@ def simulate(
         rolling_on = target
 
     return Trajectory(np.array(times), np.array(states), tuple(events), steps, coarse_steps, grazes)
-
-
-def simulate_many(initial_states: ArrayLike, params: BallTableParams, **kwargs: Any) -> list[Trajectory]:
-    """
-    :func:`simulate` for a batch of initial states with the same settings (a Gauss-Newton finite-difference batch, an
-    aim grid): each trajectory is exactly ``simulate(state, params, **kwargs)``.
-
-    It runs the scalar path per ball. A numpy lockstep integration (``flight.rk4_step_array``) costs about 125-210 us
-    per step for any batch up to 256 balls against 2.1 us per ball for the scalar RK4 step (measured 2026-10-07), so it
-    breaks even only near 70 balls before any event handling: slower for the planner's 4-8 probe batches, marginal for
-    its 81-point aim grid. The batch API is here so a vectorised backend (torch, for phase two) can replace the loop.
-
-    :param initial_states: Shape ``(B, 9)``.
-    :param params: Physics parameters.
-    :param kwargs: :func:`simulate`'s keyword arguments.
-    :return: ``B`` trajectories.
-    """
-
-    states = np.asarray(initial_states, dtype=float).reshape(-1, STATE_SIZE)
-    return [simulate(state, params, **kwargs) for state in states]
-
-
-def _apex_height(model: FlightModel, launch_speed: float, radius: float, dt: float) -> float:
-    """Highest point of the ball's bottom above the launch plane, launched straight up at ``launch_speed`` m/s."""
-
-    class _Rising:
-        def gap(self, t: float, state: Sequence[float]) -> float:
-            return state[5]
-
-    start = [0.0, 0.0, radius, 0.0, 0.0, launch_speed, 0.0, 0.0, 0.0]
-    segment = integrate_until_event(model, start, 0.0, 10.0, (_Rising(),), dt=dt, record_every=10**9, time_tolerance=1e-12)
-    if segment.hit is None:
-        raise RuntimeError("ball did not reach its apex within 10 s")
-    return segment.hit.state[2] - radius
-
-
-def restitution_from_drop_test(drop_height: float, bounce_height: float, params: BallTableParams, *, dt: float = DEFAULT_DT) -> float:
-    """
-    The table restitution that reproduces a vertical drop test, with drag.
-
-    The ball's lowest point starts ``drop_height`` above the middle of one
-    half of the table, at rest, and rebounds to ``bounce_height``. Without air the answer is
-    ``sqrt(bounce_height / drop_height)``; with air the drag on the way down
-    and up makes the true ``e`` larger.
-
-    :param drop_height: Release height of the ball's bottom above the table, m.
-    :param bounce_height: Rebound apex of the ball's bottom, m.
-    :param params: Physics parameters (the table restitution in them is ignored).
-    :param dt: Flight step, s.
-    :return: The normal restitution ``e``.
-    """
-
-    from scipy.optimize import brentq
-
-    if not 0.0 < bounce_height <= drop_height:
-        raise ValueError("need 0 < bounce_height <= drop_height")
-    radius = params.ball.radius
-    x_drop = -0.25 * params.table.length
-    drop = simulate([x_drop, 0.0, radius + drop_height, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], params, dt=dt, terminal_events=("table",), max_time=10.0)
-    table_hits = drop.events_of("table")
-    if not table_hits:
-        raise RuntimeError("drop test ball did not reach the table")
-    impact_speed = -float(table_hits[0].state_before[5])
-    model = FlightModel.from_params(params)
-    upper = impact_speed
-    if _apex_height(model, upper, radius, dt) < bounce_height:
-        raise ValueError("bounce height is unreachable with restitution <= 1 under this drag")
-    rebound_speed = cast(float, brentq(lambda v: _apex_height(model, v, radius, dt) - bounce_height, 1e-6, upper, xtol=1e-12))
-    return rebound_speed / impact_speed

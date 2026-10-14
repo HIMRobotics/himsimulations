@@ -1,12 +1,10 @@
 """
 Canonical PhysX settings for the ball, the surfaces and the paddles, derived from a parameter set.
 
-Pure: no simulator import. The game harness authors exactly these values
-(:mod:`lib.physics.engine.physx`), and the calibration harness reads the same
-function so the parity check compares like with like.
+Pure: no simulator import. The replay authors exactly these values
+(:mod:`lib.physics.engine.physx`).
 
-Why each setting (measured on production by the engine spikes,
-``reports/spike-physics.md`` and ``reports/spike-render.md``):
+Why each setting (measured on Isaac Sim 6.0.1):
 
 - **PGS, not TGS.** Under TGS a contact whose first touch falls in the first
   ~1-8% of a step loses most of its restitution (rubber 0.03-0.6, the table
@@ -34,7 +32,6 @@ Why each setting (measured on production by the engine spikes,
 
 from __future__ import annotations
 
-import math
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -149,9 +146,9 @@ class PaddleBodySettings(BaseModel):
     :ivar rigid_body_impact: Resolve hybrid paddle hits as a free rigid paddle (the effective mass plus the paddle
         inertia about the blade centre), so an off-centre hit meets less mass and turns the blade; false: a point mass.
     :ivar max_drive_speed_mps: Clamp on the commanded linear velocity, so a bad target never flings it.
-    :ivar blade_edge: The blade has the oracle's rounded edge (``reports/physics-ref.md`` Addenda 13-16): a touch on it is
+    :ivar blade_edge: The blade has the oracle's rounded edge (:mod:`lib.physics.reference.blade`): a touch on it is
         found by the solid gap and resolved with ``rim_contact``, an unvalidated prior. False: the face-only blade, through
-        whose edge a ball passes, for replaying face-only data (datagen v1 and v1.1) and as a control.
+        whose edge a ball passes, as a control.
     """
 
     model_config = _FROZEN
@@ -216,8 +213,8 @@ def canonical_settings(
     """
     The adapter's settings for a parameter set.
 
-    Table and net default to ``hybrid``, the contact model the calibration
-    harness grades: on production PhysX (PGS) the native table applies
+    Table and net default to ``hybrid``, the calibrated contact model: on
+    PhysX (PGS) the native table applies
     friction per axis rather than as a Coulomb cone (up to 25% excess slip on
     cross-court bounces), sticks early near the stick/slip boundary (up to
     0.47 m/s) and adds about 6% spin error through speculative contact, and
@@ -229,9 +226,8 @@ def canonical_settings(
     :param physics_dt_s: Physics step.
     :param table_mode: How the table contact is resolved.
     :param net_mode: How the net contact is resolved (the net box; the posts stay native).
-    :param floor_mode: How the floor contact is resolved: ``hybrid`` for the game (with the room's walls, ceiling and
-        furniture; native PhysX friction gained energy on a rolling ball, game 6 run 0640a75a event 632), ``engine``
-        (PhysX) by default so the calibration scenes keep their native floor.
+    :param floor_mode: How the floor contact is resolved: ``hybrid`` for the replay (with the room's walls, ceiling and
+        furniture; native PhysX friction gains energy on a rolling ball), ``engine`` (PhysX) by default.
     :param ball_integrator: Who integrates the game ball; ``rk4`` needs every contact hybrid (PhysX never meets the ball).
     :param engine_dt_s: The PhysX step under ``rk4``: a whole number of game steps.
     :param blade_edge: The paddles' rounded edge (the oracle's default); False for face-only data and controls.
@@ -267,12 +263,6 @@ def canonical_settings(
     )
 
 
-def max_angular_velocity_needed_deg_s(spin_rev_s: float = 160.0) -> float:
-    """The cap a spin needs, deg/s (the default PhysX cap is 5729.58)."""
-
-    return math.degrees(2.0 * math.pi * spin_rev_s)
-
-
 __all__ = [
     "BallBodySettings",
     "BallIntegrator",
@@ -282,5 +272,4 @@ __all__ = [
     "SceneSettings",
     "SurfaceSettings",
     "canonical_settings",
-    "max_angular_velocity_needed_deg_s",
 ]

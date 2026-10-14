@@ -34,7 +34,6 @@ _BLADE = (
 )  # fmt: skip
 _START = ("a1x", "a1y", "a1z", "b1x", "b1y", "b1z")
 COLUMNS = _FLIGHT + _GEOMETRY + _BLADE + _START
-_AT = {name: i for i, name in enumerate(COLUMNS)}
 
 
 def pair_constants(params: VecParams, ys: Tensor, row: Tensor, surface: Tensor, blades: tuple[Tensor, ...] | None) -> tuple[Tensor, Tensor, Tensor]:

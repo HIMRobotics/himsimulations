@@ -20,11 +20,6 @@ given normal it inverts in closed form:
 Impulses outside the friction cone (``|P_t| > mu P_n``) cannot be produced: a
 sliding impulse lies on the cone. Those, and impulses that do not push along the
 normal, have no face velocity (``None``).
-
-``reconstruction/paddle/inverse.py`` keeps its own point-mass version
-(``paddle_velocity_for``, used by the paddle reconstruction); this one is the
-reference model's, with the rigid-body paddle, the exact speed-curve root and the
-cone check. A test holds the two equal on point-mass cases inside the cone.
 """
 
 from __future__ import annotations
@@ -138,12 +133,4 @@ def paddle_velocity_for(
     return contact_point_velocity - relative
 
 
-def blade_velocity_for(face_velocity: ArrayLike, angular_velocity: ArrayLike, contact_offset: ArrayLike) -> Array:
-    """The blade-centre velocity whose material point at ``contact_offset`` (m, from the centre) moves at ``face_velocity``."""
-
-    return np.asarray(face_velocity, dtype=np.float64).reshape(3) - np.cross(
-        np.asarray(angular_velocity, dtype=np.float64).reshape(3), np.asarray(contact_offset, dtype=np.float64).reshape(3)
-    )
-
-
-__all__ = ["blade_velocity_for", "contact_compliance", "paddle_velocity_for"]
+__all__ = ["contact_compliance", "paddle_velocity_for"]

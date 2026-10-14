@@ -1,26 +1,25 @@
 """
 The lab room as static contact geometry for the ball: walls, ceiling and the solid furniture, in the table frame.
 
-Pure numpy, no simulator import. :mod:`lib.environment.scene.colliders` authors
-these boxes as PhysX statics (native contacts, like the floor), and the game
+Pure numpy, no simulator import. The replay scene (``lib/him_lab.py``) authors
+these boxes as PhysX statics (native contacts, like the floor), and the replay's
 adapter uses the same boxes to name an engine contact ``wall``
 (:func:`lib.physics.engine.contacts.classify_native`) and to count a ball that
 leaves the room.
 
-**Geometry** comes from the published room asset (``demos/table-tennis/lab-room@v2``,
-built by ``reconstruction/scene/build_scene.py`` from ``reconstruction/scene/config.py``):
-the interior spans ``x`` in [-5.0, 5.0] m and ``y`` in [-4.7, 3.3] m, the walls are
+**Geometry** comes from the room asset (``ping-pong/him-lab-room@v2``, the HIM lab's
+reconstruction): the interior spans ``x`` in [-5.0, 5.0] m and ``y`` in [-4.7, 3.3] m, the walls are
 0.10 m thick and 3.0 m tall, and the ceiling is 3.0 m above the floor. The asset's
 origin is on the floor below the table-top centre, so a height ``h`` in the asset
 is ``h - 0.76`` in the table frame. The solid furniture along the ``+y`` wall
-(the two cabinets, the lockers, the pedestal and the cart) is taken from the same
-config as boxes; open frames, the stool, cables and flat wall clutter are left out
+(the two cabinets, the lockers, the pedestal and the cart) is taken from the asset's
+build configuration as boxes; open frames, the stool, cables and flat wall clutter are left out
 (a ball passes through or under them, or they lie flat on a wall).
 
 **Material** (``WALL_CONTACT``). No measurement of a table-tennis ball on a painted
 wall was found. The cited rigid-target bound is the ball's own restitution on glass,
 about 0.95 at 1 m/s and 0.92 near 5 m/s (Remond et al. 2022, the floor prior's
-source in ``docs/physics-priors.md``). A lab wall is a painted partition on studs
+source; ``docs/physics.md``). A lab wall is a painted partition on studs
 that flexes and dissipates more than a slab, and the cabinets are thin sheet panels,
 so the nominal restitution is set below that bound, at 0.80 (judgement; plausible
 range 0.70-0.90). Friction 0.35 is the floor prior's judgement for a painted or
@@ -65,14 +64,7 @@ measurement of a ball on a table's edge or side was found. The faces are the sam
 surface, struck in its plane, where it is stiffer than the top is under a bounce; the top's restitution (0.94 at
 2-4 m/s, from the drag-corrected ITTF drop test) already sits at the ball's own restitution on rigid targets (0.92-0.95
 at 1-5 m/s, Remond et al. 2022), so a stiffer face cannot give more and the top's law is the nearest cited value
-(judgement). The playing surface itself is unchanged: the reference model's and the calibration harness's plane."""
-
-FIXTURE_CONTACT: ContactMaterial = ContactMaterial(restitution=0.85, friction=0.25)
-"""The contract's nominal ``fixture_contact`` (``lib.physics.params``; the scene and the stepper use the contract's):
-ball against the net clamps and the table's undercarriage (painted metal and hard plastic). No measurement found: the
-ball's restitution on rigid targets is 0.92-0.95 at 1-5 m/s (Remond et al. 2022), so 0.85 (judgement; plausible
-0.75-0.92); friction 0.25, a little above ABS on smooth glass (0.22, Remond et al. 2023; judgement). The steel posts
-take ``post_contact`` (0.946, the ITTF T3 steel-block bounce, drag-corrected)."""
+(judgement). The playing surface itself is the reference model's plane."""
 
 
 @dataclass(frozen=True)
@@ -120,7 +112,7 @@ def room_boxes() -> tuple[RoomBox, ...]:
         _box("wall_neg_y", (x0 - t, x1 + t), (y0 - t, y0), (0.0, h + t)),
         _box("wall_pos_y", (x0 - t, x1 + t), (y1, y1 + t), (0.0, h + t)),
         _box("ceiling", (x0 - t, x1 + t), (y0 - t, y1 + t), (h, h + t)),
-        # Solid furniture against the +Y wall (reconstruction/scene/config.py "props").
+        # Solid furniture against the +Y wall (the room asset's props).
         _box("cabinet_low", (-2.9, -1.95), (2.68, y1), (0.0, 0.85)),
         _box("cabinet_tall", (-3.6, -2.95), (2.75, y1), (0.0, 1.9)),
         _box("lockers", (0.0, 2.4), (2.9, y1), (0.0, 1.0)),
@@ -180,7 +172,6 @@ def left_room(before: ArrayLike, after: ArrayLike) -> bool:
 
 
 __all__ = [
-    "FIXTURE_CONTACT",
     "ROOM_BOXES",
     "ROOM_HEIGHT_M",
     "ROOM_X_M",

@@ -112,12 +112,6 @@ def paddle_velocity_for(
     return contact_point_velocity - relative, positive & inside
 
 
-def blade_velocity_for(face_velocity: Tensor, angular_velocity: Tensor, offset: Tensor) -> Tensor:
-    """The blade-centre velocities whose material points at ``offset`` (from the centre) move at ``face_velocity``."""
-
-    return face_velocity - torch.cross(angular_velocity, offset, dim=-1)
-
-
 class GraphedInverse:
     """
     :func:`paddle_velocity_for` for ``M`` fixed rows (rigid paddle: offsets and inertias given), one graph per call.
@@ -173,4 +167,4 @@ class GraphedInverse:
         return self._call(*inputs)
 
 
-__all__ = ["GraphedInverse", "blade_velocity_for", "contact_compliance", "paddle_velocity_for"]
+__all__ = ["GraphedInverse", "contact_compliance", "paddle_velocity_for"]

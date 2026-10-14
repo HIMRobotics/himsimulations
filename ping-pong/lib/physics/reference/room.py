@@ -1,7 +1,7 @@
 """
 The lab room as rigid surfaces: four walls, the ceiling and the solid furniture along the +Y wall.
 
-The geometry is the published room asset's, as the game adapter uses it
+The geometry is the room asset's, as the replay's adapter uses it
 (``lib/physics/engine/colliders.py`` ``room_boxes``): the interior spans
 ``x`` in [-5.0, 5.0] m and ``y`` in [-4.7, 3.3] m; the walls are 0.10 m thick;
 the ceiling is 3.0 m above the floor. The asset's origin is on the floor, so
@@ -9,8 +9,7 @@ an asset height ``h`` is ``h - table.height`` in the table frame. The oracle
 keeps its own copy, and a test pins it to the adapter's boxes.
 
 Every box takes ``wall_contact`` (judgement; see ``priors.json``). Contacts
-are ``kind = "wall"``, with the box's name as ``region``. Like the scene,
-which keeps the room out of the calibration parity scene,
+are ``kind = "wall"``, with the box's name as ``region``.
 :func:`lib.physics.reference.simulate.simulate` includes the room only when
 asked (``room=True``).
 """

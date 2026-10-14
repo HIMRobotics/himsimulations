@@ -1,5 +1,5 @@
 """
-Where will the ball be? A batched flight-plus-one-table-bounce predictor for decisions (L1's intent, the opponent).
+Where will the ball be? A batched flight-plus-one-table-bounce predictor for decisions (a policy's forecast, the opponent).
 
 :class:`BouncePredictor` takes each environment's ball state now and ``K`` candidate delays ``tau`` and returns, per
 environment, the first contact (it must be a table-top bounce on the receiver's half, ``side``), the ball just after
@@ -134,28 +134,6 @@ def _cylinder(x: Tensor, y: Tensor, z: Tensor, ay: Tensor, rho: float, z0: float
     cz = z.clamp(z0, z1)
     ex, ey, ez = x - cx, y - cy, z - cz
     return torch.sqrt(ex * ex + ey * ey + ez * ez)
-
-
-def static_gap_columns(params: VecParams, x: Tensor, y: Tensor, z: Tensor) -> tuple[Tensor, ...]:
-    """:func:`lib.physics.vectorized.geometry.static_gaps` (detection form) per component: the 8 gaps."""
-
-    radius = params.radius
-    zero = torch.zeros_like(x)
-    hl, hw, thick = params.table_half_length, params.table_half_width, params.board_thickness
-    ht, hs, height = params.net_half_thickness, params.net_half_span, params.net_height
-    top = z - radius
-    net = _box(x, y, z, (-ht, -hs, zero), (ht, hs, height)) - radius
-    floor = z + params.table_height - radius
-    board = _box(x, y, z, (-hl, -hw, -thick), (hl, hw, zero)) - radius
-    over = (z >= 0.0) & (x.abs() <= hl) & (y.abs() <= hw)
-    board = torch.where(over & (top >= 0.0), torch.full_like(board, math.inf), board)
-    posts_y, rho, (z0, z1) = params.posts
-    post_neg = _cylinder(x, y, z, posts_y[:, 0], rho, z0, z1) - radius
-    post_pos = _cylinder(x, y, z, posts_y[:, 1], rho, z0, z1) - radius
-    cx, (cy0, cy1), (cz0, cz1) = params.clamps
-    clamp_neg = _box(x, y, z, (zero - cx, zero - cy1, zero + cz0), (zero + cx, zero - cy0, zero + cz1)) - radius
-    clamp_pos = _box(x, y, z, (zero - cx, zero + cy0, zero + cz0), (zero + cx, zero + cy1, zero + cz1)) - radius
-    return (top, net, floor, board, post_neg, post_pos, clamp_neg, clamp_pos)
 
 
 def _box2(x: Tensor, y: Tensor, z: Tensor, low: tuple[Any, Any, Any], high: tuple[Any, Any, Any]) -> Tensor:
@@ -463,5 +441,4 @@ __all__ = [
     "flight_block_fn",
     "indicators_fn",
     "rk4_columns",
-    "static_gap_columns",
 ]

@@ -3,8 +3,7 @@ A persistent cache for torch.compile's output (the Inductor FX-graph cache, with
 an Antioch asset so a new session does not recompile the ball physics' phases from scratch.
 
 Each session starts with an empty cache directory (``TORCHINDUCTOR_CACHE_DIR``, on the session's own volume), so every
-run pays the full compile: about 240 s for a robot-ball coupling's phases on an RTX PRO 6000 (``reports/physics-ref.md``
-Addendum 17). :func:`restore` unpacks a published cache into that directory before the phases compile, and
+run pays the full compile: about 240 s for a robot-ball coupling's phases on an RTX PRO 6000. :func:`restore` unpacks a published cache into that directory before the phases compile, and
 :func:`publish` packs it after a run that compiled.
 
 Torch looks an entry up by the hash of the graph, its inputs' properties and the compiler's configuration, so a stale or
@@ -22,7 +21,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-ASSET_PREFIX: str = "demos/table-tennis/compile-cache"
+ASSET_PREFIX: str = "ping-pong/compile-cache"
 """Assets are ``<prefix>-<torch>-<cuda>-<sm>`` (one per compiler and device kind), one version per publication."""
 
 PARTS: tuple[str, ...] = ("fxgraph", "triton", "aotautograd")

@@ -31,8 +31,6 @@ Tensor = Any
 TABLE_TOP, NET, FLOOR, BOARD, POST_NEG, POST_POS, CLAMP_NEG, CLAMP_POS = range(8)
 """Static surface indices, in the oracle's order."""
 STATIC_COUNT = 8
-STATIC_NAMES = ("table", "net", "floor", "table", "net_post_neg_y", "net_post_pos_y", "net_clamp_neg_y", "net_clamp_pos_y")
-"""Each static surface's oracle name."""
 
 MAT_TABLE, MAT_RUBBER, MAT_NET_CORD, MAT_NET_MESH, MAT_FLOOR, MAT_POST, MAT_FIXTURE, MAT_RIM = range(8)
 """Material codes: the contract's ``table_contact``, ``rubber_contact``, ``net_contact`` (rigid at the cord, the catch
@@ -384,19 +382,6 @@ def blade_state(tensors: tuple[Tensor, ...], h: float, u: Tensor, env: Tensor, b
     return position, orientation, velocity, omega_all[env, blade]
 
 
-def blade_gaps(pos: Tensor, track: BladeTrack, u: Tensor, params: VecParams, env: Tensor) -> Tensor:
-    """
-    Every blade's gap (:func:`lib.physics.reference.blade.blade_gap`) for each row, ``(M, B)``.
-
-    :param pos: Ball centres ``(M, 3)``.
-    :param track: The blades' motion over the step.
-    :param u: Step fraction per row ``(M,)``.
-    :param env: Environment per row.
-    """
-
-    return blade_gaps_of(pos, track.tensors, track.h, u, params, env)
-
-
 def blade_gaps_of(pos: Tensor, tensors: tuple[Tensor, ...], h: float, u: Tensor, params: VecParams, env: Tensor) -> Tensor:
     """:func:`blade_gaps` from :attr:`BladeTrack.tensors`."""
 
@@ -556,14 +541,12 @@ __all__ = [
     "POST_POS",
     "REGION",
     "STATIC_COUNT",
-    "STATIC_NAMES",
     "TABLE_TOP",
     "BladeContact",
     "BladeTrack",
     "StaticContact",
     "blade_contact",
     "blade_gap",
-    "blade_gaps",
     "blade_gaps_of",
     "blade_state",
     "edge_gap",

@@ -27,9 +27,9 @@ to check it (normal restitution, energy, impact speed).
 static surface so slowly that its rebound would leave it with less than
 :data:`REST_SPEED_MPS` of separation while gravity presses it on (a ball landing
 on the net cord, rolling on the table or resting on a forearm), gravity closes
-the gap again within the step, and resolving every step as a new impact gave a
-chain of hundreds of micro-impacts (games 3, 6 and 7 of the v3 runs: 250-650 net
-"contacts" in 0.09-0.18 s at 2.0 mm/s approach, ``g cos(theta) dt / (1 + e)``).
+the gap again within the step, and resolving every step as a new impact gives a
+chain of hundreds of micro-impacts (250-650 net "contacts" in 0.09-0.18 s at
+2.0 mm/s approach, ``g cos(theta) dt / (1 + e)``).
 The reference simulation stops at this point ("sustained rolling contact is
 outside the impact model", ``lib.physics.reference.simulate``'s ``rest_speed``,
 the same 0.05 m/s), so the adapter resolves it as the constraint it is
@@ -286,9 +286,9 @@ TABLE_START_SLOP_M: float = 2e-4
 The sweep predicts the step's end from the start velocity, but PhysX integrates semi-implicitly (the step's gravity
 and drag kick come first), so the step ends up to ``|a| dt^2`` lower (about 1e-5 m at 960 Hz), and the float32
 read-back adds about 1e-6 m. A ball whose predicted end sat in that sliver above the plane started the next step just
-below it and was never swept again: it fell through the table (found by the calibration harness on production,
-about 0.5-1% of bounces at 960 Hz). The calibration harness's batched sweep carries the same slop
-(:data:`lib.physics.engine.lab.vectorized.TABLE_START_SLOP_M`); deeper than it the ball can only be under the table.
+below it and was never swept again: it fell through the table (about 0.5-1% of bounces at 960 Hz). The batched
+sweep carries the same slop (:data:`lib.physics.engine.sweeps.TABLE_START_SLOP_M`); deeper than it the ball can only
+be under the table.
 """
 
 
@@ -322,16 +322,16 @@ def sweep_table(ball: ArrayLike, dt: float, *, radius: float, half_length: float
 
 def sweep_net(ball: ArrayLike, dt: float, *, radius: float, half_thickness: float, half_span: float, height: float) -> tuple[SweptContact | None, bool]:
     """
-    Sweep the ball against the net box over one step (the hybrid net): the calibration harness's batched sweep
-    (:func:`lib.physics.engine.lab.vectorized.sweep_net`) for one ball, with the depth of a touch that starts inside.
+    Sweep the ball against the net box over one step (the hybrid net): the batched sweep
+    (:func:`lib.physics.engine.sweeps.sweep_net`) for one ball, with the depth of a touch that starts inside.
 
     :param ball: Ball state at the step start.
     :param dt: Step, s.
     :return: ``(contact or None, tunnelled)``; ``tunnelled`` is true when the centre ends the step inside the box without a touch.
     """
 
-    from lib.physics.engine.lab.vectorized import box_gap
-    from lib.physics.engine.lab.vectorized import sweep_net as batched
+    from lib.physics.engine.sweeps import box_gap
+    from lib.physics.engine.sweeps import sweep_net as batched
 
     state = np.asarray(ball, dtype=np.float64)
     batch = batched(np, state[None, :3], state[None, 3:6], np.array([radius]), dt, half_thickness, half_span, height)
@@ -389,7 +389,7 @@ def sweep_box(ball: ArrayLike, dt: float, *, radius: float, box: Box) -> tuple[S
     """
     Sweep the ball against a static axis-aligned box over one step: faces, edges and corners.
 
-    The algorithm is the net sweep's (:func:`lib.physics.engine.lab.vectorized.sweep_net`): the ball moves at
+    The algorithm is the net sweep's (:func:`lib.physics.engine.sweeps.sweep_net`): the ball moves at
     constant velocity; the gap (distance to the box less the radius) is sampled at :data:`BOX_SWEEP_SAMPLES` points of
     the step and the first bracketed root bisected; the normal runs from the box's closest point to the centre at the
     touch, so an edge or a corner deflects the ball by its geometry. A ball that starts the step overlapping the box
@@ -468,12 +468,11 @@ def sweep_table_box(
     Sweep the ball against the whole table-top board (the hybrid table): the playing surface, its edges and corners,
     the side and end faces and the underside.
 
-    The playing surface is :func:`sweep_table`, unchanged (the reference model's and the calibration harness's table
-    plane, slop included), so every bounce on the top is what it was. Only when it finds no touch is the board swept as
-    a box (:func:`sweep_box`): an edge ball deflected by the edge's geometry, a ball reaching an end or side face (a
-    dead ball coming back off a player: game 5, iteration 5, run b21788e2, entered the 8E end face and fell through the
-    board, since the top plane was the table's only hybrid geometry and its native collider is filtered for the ball),
-    or one rising into the underside off the floor. Every face takes the table's impact law (the stepper passes
+    The playing surface is :func:`sweep_table`, unchanged (the reference model's table plane, slop included), so every
+    bounce on the top is what it was. Only when it finds no touch is the board swept as a box (:func:`sweep_box`): an
+    edge ball deflected by the edge's geometry, a ball reaching an end or side face (a dead ball coming back off a
+    player, which would otherwise fall through the board: the table's native collider is filtered for the ball), or
+    one rising into the underside off the floor. Every face takes the table's impact law (the stepper passes
     ``params.table_contact``; see :mod:`lib.physics.engine.colliders` for why the unmeasured faces share it).
 
     :return: The first touch, or ``None``.
@@ -604,13 +603,13 @@ def sweep_frame(ball: ArrayLike, dt: float, *, radius: float, frame: FrameGeomet
 class FixtureGeometry:
     """
     The net posts and clamps as hybrid static shapes: the reference model's ``NetFixture``s
-    (:func:`lib.physics.reference.surfaces.net_fixtures`), each as the calibration harness's :data:`Shape` (a capped
+    (:func:`lib.physics.reference.surfaces.net_fixtures`), each as a batched-sweep :data:`Shape` (a capped
     vertical cylinder per post, an axis-aligned box per clamp), with the contract's law (``post_contact``, steel, for the
     posts; ``fixture_contact`` for the clamps) and one bounding box per side of the table for a cheap rejection.
 
     :ivar names: Fixture names (``net_post_neg_y``...).
     :ivar regions: ``post`` or ``clamp``.
-    :ivar shapes: The shapes, for :func:`lib.physics.engine.lab.vectorized.sweep_shape`.
+    :ivar shapes: The shapes, for :func:`lib.physics.engine.sweeps.sweep_shape`.
     :ivar materials: Each fixture's impact law.
     :ivar sides: Per side of the table, ``(bounding box, indices of its fixtures)``.
     """
@@ -623,7 +622,7 @@ class FixtureGeometry:
 
     @classmethod
     def from_params(cls, params: BallTableParams) -> FixtureGeometry:
-        """The posts and clamps of ``params``, exactly as the reference model and the calibration harness build them."""
+        """The posts and clamps of ``params``, exactly as the reference model builds them."""
 
         from lib.physics.reference.surfaces import net_fixtures
 
@@ -654,15 +653,15 @@ class FixtureGeometry:
 
 def sweep_fixtures(ball: ArrayLike, dt: float, *, radius: float, fixtures: FixtureGeometry) -> tuple[SweptContact | None, int | None, bool]:
     """
-    Sweep the ball against the net posts and clamps over one step (hybrid): the calibration harness's
-    :func:`lib.physics.engine.lab.vectorized.sweep_shape` on each fixture within one step's reach of the ball (a
+    Sweep the ball against the net posts and clamps over one step (hybrid):
+    :func:`lib.physics.engine.sweeps.sweep_shape` on each fixture within one step's reach of the ball (a
     scalar bounding-box test per side first, so a ball away from the side lines costs two distance checks), the
     earliest touch winning.
 
     :return: ``(contact or None, the fixture's index or None, tunnelled)``.
     """
 
-    from lib.physics.engine.lab.vectorized import sweep_shape
+    from lib.physics.engine.sweeps import sweep_shape
 
     state = np.asarray(ball, dtype=np.float64)
     vx, vy, vz = (float(v) for v in state[3:6])
@@ -698,7 +697,7 @@ def sweep_floor(ball: ArrayLike, dt: float, *, radius: float, floor_z: float) ->
     fraction 0 and is resolved as a sustained contact (:func:`impose_contact` with ``rest_speed``).
 
     Native PhysX friction on the floor turned a rolling ball's spin about the vertical into sideways velocity and
-    gained 14 % kinetic energy (game 6, iteration 6, run 0640a75a, event 632); the reference law applies no torque
+    gained 14 % kinetic energy in a measured replay; the reference law applies no torque
     about the normal and never gains energy.
 
     :return: The touch, or ``None``.
@@ -835,9 +834,8 @@ def impose_contact(
     leaves with ``v'`` and accelerates at ``a'`` for the rest of the step. The engine integrates the whole step
     semi-implicitly from what is written (``v_end = v_s + a' dt``, ``x_end = x_s + v_end dt``), so landing on the
     event-driven ``v' + a' (1 - f) dt`` and ``c + v' (1 - f) dt + a' ((1 - f) dt)^2 / 2`` needs
-    ``v_s = v' - a' f dt`` and ``x_s = c - v' f dt - a' (1 - f)(1 + f) dt^2 / 2`` (the calibration harness's
-    :func:`lib.physics.engine.lab.vectorized.imposed_state`). Without these the step after every contact carried an
-    extra ``a f dt`` that depended on the contact's phase within the step.
+    ``v_s = v' - a' f dt`` and ``x_s = c - v' f dt - a' (1 - f)(1 + f) dt^2 / 2``. Without these the step after every
+    contact carried an extra ``a f dt`` that depended on the contact's phase within the step.
 
     :param contact: The detected touch (its ball state carries the step-start velocity and spin).
     :param material: The pair's impact law.
@@ -1057,14 +1055,14 @@ def classify_native(
         and -(radius + margin) <= position[2] <= params.net.height + radius + margin
     ):
         # The net box (0 <= z <= height) grown by the radius and the margin, below as well as above: a ball must reach
-        # above the table plane to touch it. (Unbounded below, game 7's dead ball bouncing on the floor under the net,
-        # run 2529abad events 325-329 at z = -0.74, was labelled ``net``.)
+        # above the table plane to touch it. (Unbounded below, a dead ball bouncing on the floor under the net was
+        # labelled ``net``.)
         surface, normal = "net", np.array([math.copysign(1.0, s0[0] if s0[0] != 0.0 else -s0[3]), 0.0, 0.0])
     elif (room := room_gap(position, radius))[0] < margin and (
         position[2] - (-params.table.height) >= radius + margin or abs(float(room[1] @ dv)) > abs(float(dv[2]))
     ):
         # A wall, the ceiling or a cabinet; at floor level only when the kick is along the box's normal rather than up
-        # (a ball rolling along the floor into a wall; measured on production, probe c9aab2fb).
+        # (a ball rolling along the floor into a wall).
         surface, normal = "wall", room[1]
     elif position[2] - (-params.table.height) < radius + margin:
         surface, normal = "floor", np.array([0.0, 0.0, 1.0])
@@ -1083,8 +1081,8 @@ def crossed_table(before: ArrayLike, after: ArrayLike, params: BallTableParams) 
     A ball that touches the table has its centre a radius above the surface, so a centre crossing ``z = 0`` inside
     the rectangle passed through the top, whether in one step or sinking slowly over several (a missed hybrid touch).
     A ball whose surface reaches more than :data:`TABLE_TUNNEL_DEPTH_M` into the board (:func:`table_board`) through an
-    edge, a side or end face or the underside is a tunnel too: the hybrid board leaves it micrometres deep at most. (Run
-    b21788e2's ball cut through the bottom corner of the 8E end with its centre never inside the board.)
+    edge, a side or end face or the underside is a tunnel too: the hybrid board leaves it micrometres deep at most (a
+    ball can cut through a bottom corner of the board with its centre never inside it).
     """
 
     s0 = np.asarray(before, dtype=np.float64)

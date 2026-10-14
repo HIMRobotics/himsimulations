@@ -1,13 +1,12 @@
 """
 The table's undercarriage, the steel apron, legs, stretchers, struts, feet and casters, as rigid surfaces.
 
-The geometry is the table asset's (``reconstruction/scene/config.py`` ``table``
-and ``build_scene.py`` ``build_table``), converted from the asset's world frame
-(floor at ``z = 0``, playing surface at ``0.76``) to the table frame (playing
-surface at ``z = 0``). As in the asset, the apron follows the table's half
-length and width; the legs, stretchers, struts and casters sit at absolute
-positions; and heights follow ``params.table`` ``height`` (the floor) and
-``board_thickness``. A test pins every number to the asset configuration.
+The geometry is the table asset's (``ping-pong/table``), converted from the
+asset's world frame (floor at ``z = 0``, playing surface at ``0.76``) to the
+table frame (playing surface at ``z = 0``). As in the asset, the apron follows
+the table's half length and width; the legs, stretchers, struts and casters sit
+at absolute positions; and heights follow ``params.table`` ``height`` (the
+floor) and ``board_thickness``.
 
 The asset's cylinders are 8- to 16-sided prisms; here they are exact
 cylinders, within about 1 mm. The diagonal struts are capsules: round ends
@@ -32,9 +31,6 @@ import numpy as np
 
 from lib.physics.params import BallTableParams, ContactMaterial
 from lib.physics.reference.surfaces import Contact, SurfaceKind
-
-ASSET_TOP_Z_M = 0.76
-"""The playing surface's height in the asset's world frame, m (the asset's floor is ``z = 0``)."""
 
 APRON_INSET_M = 0.06
 APRON_DEPTH_M = 0.055

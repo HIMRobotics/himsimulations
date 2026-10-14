@@ -1,9 +1,8 @@
 """
 The players' bodies as moving capsules for the ball: a swept sphere-capsule contact, pure numpy.
 
-The characters render as skinned meshes with no colliders, so the ball passed
-through them (36 episodes in the seven v3 games). Each render tick the game
-loop has every joint's world position from the animated skeleton
+The characters render as skinned meshes with no colliders, so without this the
+ball would pass through them. Each render tick the replay loop has every joint's world position from the animated skeleton
 (``forward_kinematics``); :func:`capsules_from_joints` turns them into one
 capsule per body segment, and :class:`BodyMotion` moves the capsules linearly
 from the previous tick's pose to this one, as the paddle segments do. Each
@@ -17,8 +16,7 @@ with :data:`BODY_CONTACT` and the capsule point's velocity).
 hip bar and a shoulder bar for the torso's breadth, the head, and each upper
 arm, forearm, hand, thigh and shin. The radii are the ANSUR II male means
 (US Army 2012 anthropometric survey, 4,082 men, public CSV from
-``tools.openlab.psu.edu/publicData/ANSUR_II_MALE_Public.csv``; summary in the
-game-fixes report), converted as ``r = circumference / (2 pi)`` or half a
+``tools.openlab.psu.edu/publicData/ANSUR_II_MALE_Public.csv``), converted as ``r = circumference / (2 pi)`` or half a
 breadth or depth and averaged along tapering segments:
 
 =============  =====  ===========================================================
@@ -36,8 +34,7 @@ shin           0.05   calf circumference 392 (r 0.062) to ankle 229 (0.036)
 =============  =====  ===========================================================
 
 The skeleton's ``Head`` joint sits at the skull base, about 0.21 m below the top
-of the head (measured on the v3 telemetry: joint 1.50 m above the floor on a
-1.71 m body), so the head capsule runs from 0.07 to 0.12 m beyond it along the
+of the head (measured: joint 1.50 m above the floor on a 1.71 m body), so the head capsule runs from 0.07 to 0.12 m beyond it along the
 neck. The radii are fixed (an average man; the characters are 1.71-1.78 m tall,
 against the survey's mean stature of 1.756 m); ``scale`` adjusts them.
 
@@ -123,9 +120,6 @@ BODY_CAPSULES: tuple[CapsuleSpec, ...] = (
     *_limb("R"),
 )
 """The capsules of one body (see the module docstring for the radii)."""
-
-CAPSULE_JOINTS: tuple[str, ...] = tuple(sorted({joint for spec in BODY_CAPSULES for joint in (spec.start, spec.end)}))
-"""Every skeleton joint the capsules need."""
 
 
 @dataclass(frozen=True, eq=False)
@@ -382,20 +376,9 @@ def sweep_body(
     return None, int(embedded.sum())
 
 
-def ball_in_body(position: ArrayLike, capsules: Capsules, *, margin: float = 0.0) -> str | None:
-    """The segment whose capsule contains a ball centre (within ``margin`` of its surface), if any: the review's ball-in-body test."""
-
-    centre = np.asarray(position, dtype=np.float64)[:3]
-    _s, point = _closest(centre[None, :], capsules.a, capsules.b)
-    inside = np.linalg.norm(centre[None, :] - point, axis=-1) <= capsules.radius + margin
-    k = np.flatnonzero(inside)
-    return capsules.names[int(k[0])] if k.size else None
-
-
 __all__ = [
     "BODY_CAPSULES",
     "BODY_CONTACT",
-    "CAPSULE_JOINTS",
     "EMBEDDED_DEPTH_M",
     "PADDLE_ARM_AFTER_S",
     "PADDLE_ARM_BEFORE_S",
@@ -403,7 +386,6 @@ __all__ = [
     "BodyTouch",
     "CapsuleSpec",
     "Capsules",
-    "ball_in_body",
     "capsules_from_joints",
     "excluded_capsules",
     "sweep_body",

@@ -11,19 +11,19 @@ Everything is in the table frame: Z-up, origin at the centre of the playing
 surface, +X along the table length, the net in the plane ``x = 0`` and the
 floor at ``z = -table.height``.
 
-The table is two surfaces. :class:`TableTop` is the playing surface, the
-plane the reference has always used, and its behaviour is unchanged.
+The table is two surfaces. :class:`TableTop` is the playing surface.
 :class:`TableBoard` is the rest of the top board: its ends, sides, edges,
-corners and underside. That is the box the game adapter sweeps
+corners and underside. That is the box the replay adapter sweeps
 (``engine/contacts.py`` ``table_board``, 25 mm deep). The net assembly is the
 net box (:class:`Net`), two post cylinders and two clamp boxes
-(:class:`NetFixture`), matching ``scene/colliders.py``. The undercarriage is in
-:mod:`lib.physics.reference.undercarriage`.
+(:class:`NetFixture`), matching the replay scene's colliders. The undercarriage
+is in :mod:`lib.physics.reference.undercarriage`.
 
 Deliberately not modelled (each is a documented limitation of the oracle, not
 of the simulator under test):
 
-- the paddle edge: only the two elliptical faces collide;
+- the paddle edge, unless asked for (``blade_edge``, :mod:`lib.physics.reference.blade`): otherwise only the two
+  elliptical faces collide;
 - the paddle's own response beyond the impulse: its script carries on unchanged.
 """
 
@@ -414,7 +414,7 @@ class TableBoard:
 
 
 NET_POST_RADIUS_M = 0.0075
-"""Net post radius, m (net asset, as ``scene/colliders.py``)."""
+"""Net post radius, m (the net asset's)."""
 
 NET_POST_OUTSET_M = 0.0045
 """Post axis beyond each end of the net box along Y, m."""
@@ -553,17 +553,15 @@ class ScriptedPaddle:
     The impact still sees the paddle's finite effective mass; the script then
     carries on unchanged, as a stiffly driven paddle would.
 
-    :param trajectory: Pose and twist as a function of time. A
-        :class:`lib.physics.reference.paddle_track.PaddleTrack` (the game's
-        per-tick segments) is also watched cheaply: see :class:`PaddleFaces`.
+    :param trajectory: Pose and twist as a function of time. A trajectory that
+        can bound where the blade is is also watched cheaply: see :class:`PaddleFaces`.
     :param name: Name recorded on its events.
     :param rigid_body: Meet the ball as a rigid body (effective mass plus the
         paddle inertia, centre of mass at the blade centre), so an off-centre
         hit meets less mass. False keeps the point-mass model.
     :param windows: Opt-in active windows ``((start, end), ...)``, s: outside
         them the paddle is not watched at all, so a touch there is not detected
-        (:func:`lib.physics.reference.paddle_track.contact_windows` builds them
-        around planned contacts). Empty (the default): always watched.
+        (for instance, windows around planned contacts). Empty (the default): always watched.
     """
 
     trajectory: PaddleTrajectory
@@ -605,17 +603,16 @@ class PaddleFaces:
     semi-axes ``a`` (``half_length``) and ``b``: negative exactly when both
     hold. It turns negative either through the band (a face hit) or through the
     outline while the ball is in the band (a hit at the rim, by a ball that
-    reached the face plane beside the blade). The game adapter's sweep
+    reached the face plane beside the blade). The replay adapter's sweep
     (``engine/contacts.py`` ``sweep_blade``) takes both: a step that starts in
     the band with the touching point inside the outline and approaching is a
-    touch at the step's start. Until 2026-10-07 the gap was the band alone: a
-    rim hit was never armed and the ball passed through the blade, and every
-    crossing of the face's infinite plane beside the blade cost a bisection
-    that found no contact (``CHANGELOG`` in ``reports/physics-ref.md``).
+    touch at the step's start. With the band alone a rim hit would never be
+    armed (the ball would pass through the blade), and every crossing of the
+    face's infinite plane beside the blade would cost a bisection that finds no
+    contact.
 
     **Far from the blade.** When the trajectory can bound where the blade is
-    (a :class:`lib.physics.reference.paddle_track.PaddleTrack`: a sphere around
-    the blade centre's path in the segment in force), a ball farther than that
+    (a ``sphere(t)`` around the blade centre's path in the segment in force), a ball farther than that
     sphere plus the blade's reach plus ``R`` gets a positive gap (its distance
     beyond that) without evaluating the pose. The gap above is positive there
     too, and the integrator reads only signs, so this changes nothing; the
@@ -810,44 +807,3 @@ def blade_rotation(face_normal: ArrayLike, handle_direction: ArrayLike = (0.0, 0
     x_axis = x_axis / np.linalg.norm(x_axis)
     y_axis = np.cross(z_axis, x_axis)
     return np.asarray(np.column_stack([x_axis, y_axis, z_axis]), dtype=np.float64)
-
-
-def constant_twist_paddle(
-    position: ArrayLike,
-    rotation: ArrayLike,
-    velocity: ArrayLike = (0.0, 0.0, 0.0),
-    angular_velocity: ArrayLike = (0.0, 0.0, 0.0),
-    *,
-    reference_time: float = 0.0,
-    name: str = "paddle",
-    rigid_body: bool = True,
-) -> ScriptedPaddle:
-    """
-    A paddle moving with constant linear and angular velocity, met as a rigid body.
-
-    At time ``t`` the blade centre is ``position + velocity (t - t_ref)`` and
-    the orientation is ``exp([angular_velocity] (t - t_ref)) rotation``.
-
-    :param position: Blade centre at the reference time, m.
-    :param rotation: Blade rotation at the reference time (columns X, Y, Z).
-    :param velocity: Linear velocity, m/s.
-    :param angular_velocity: Angular velocity, rad/s (table frame).
-    :param reference_time: Time at which ``position`` and ``rotation`` hold, s.
-    :param name: Paddle name.
-    :param rigid_body: See :class:`ScriptedPaddle`.
-    """
-
-    from scipy.spatial.transform import Rotation
-
-    p0 = np.asarray(position, dtype=float).reshape(3)
-    r0 = np.asarray(rotation, dtype=float).reshape(3, 3)
-    v = np.asarray(velocity, dtype=float).reshape(3)
-    w = np.asarray(angular_velocity, dtype=float).reshape(3)
-    spinning = bool(np.any(w != 0.0))
-
-    def trajectory(t: float) -> PaddlePose:
-        dt = t - reference_time
-        rot = Rotation.from_rotvec(w * dt).as_matrix() @ r0 if spinning else r0
-        return PaddlePose(p0 + v * dt, rot, v, w)
-
-    return ScriptedPaddle(trajectory, name, rigid_body)

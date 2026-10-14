@@ -1,21 +1,14 @@
 """
-The blade at a contact: one geometry and contact state for the reference oracle and the game adapter.
+The blade at a contact: one geometry and contact state for the reference oracle and the replay's adapter.
 
 A paddle touch is resolved by :func:`lib.physics.reference.impact.resolve_impact`
 with the blade's state at the touch: the struck face's normal, the touching point,
 its offset from the blade centre (the rigid paddle's lever arm), the velocity of the
 blade's material point there, and the blade's axes (its inertia in the table frame).
-The oracle and the game adapter must hand it the *same* state, or the same touch
-leaves at different velocities. They used to differ:
-
-- the adapter interpolated the blade linearly inside its 1/3840 s step (position,
-  rotation matrix, velocity and spin between ``segment.at(t)`` and
-  ``segment.at(t + dt)``), and located the touch by interpolating the signed
-  distance; inside a step the Hermite velocity is quadratic, so a blade turning
-  1000 m/s^2 of acceleration over a step moved the material point's velocity by
-  millimetres per second (datagen-core: episode ``ce654ebd9c366945``, 2.37 mm/s on
-  the outgoing ball, ``derived/datagen/evidence/``);
-- the oracle evaluated the segment exactly at the bisected root.
+The oracle and the adapter must hand it the *same* state, or the same touch leaves
+at different velocities: interpolating the blade linearly inside a step instead of
+evaluating its segment at the root moves the material point's velocity by
+millimetres per second (inside a step the Hermite velocity is quadratic).
 
 This module is that state, from the segment itself:
 
@@ -31,10 +24,9 @@ This module is that state, from the segment itself:
 - :func:`blade_contact` (and :func:`segment_contact`, which evaluates the segment)
   gives the contact frame at that time.
 
-**The rounded edge** (the oracle's blade since 2026-10-09; the game adapter keeps the face-only gap above until it
-adopts this). A real blade is a solid: a ball whose centre passes up to one radius beyond the outline strikes its
-edge, which the face-only gap lets through (robot-env §13.6; ``reports/physics-ref.md`` Addendum 12: 2.8 per 1,000
-generated shots). The edge is modelled as a torus of tube radius ``h`` (half the blade thickness) around the outline
+**The rounded edge** (the oracle's and the GPU batch's blade; the replay's adapter keeps the face-only gap above).
+A real blade is a solid: a ball whose centre passes up to one radius beyond the outline strikes its edge, which the
+face-only gap lets through (about 3 per 1,000 shots). The edge is modelled as a torus of tube radius ``h`` (half the blade thickness) around the outline
 in the mid-plane, so the blade is the outline's disc with a rounded rim:
 
 - :func:`ellipse_closest` is the outline's point nearest a point of its plane, by a fixed number of iterations (the
@@ -58,7 +50,7 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Literal, TypedDict
+from typing import Any, Literal
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
@@ -78,8 +70,8 @@ iterations:
 - 3 iterations: 2.8e-17 m, rounding;
 - 4 iterations: 2.8e-17 m.
 
-Three reach rounding. The fourth, which shipped first, only lengthened the engine's float64 root-loop kernels: about
-+50 % of the ball's cost at 8,192 environments (``reports/physics-ref.md`` Addenda 15 and 16).
+Three reach rounding. A fourth only lengthens the engine's float64 root-loop kernels (about +50 % of the ball's
+cost at 8,192 environments).
 """
 
 OUTLINE_TOLERANCE: float = 1e-6
@@ -87,19 +79,6 @@ OUTLINE_TOLERANCE: float = 1e-6
 found from just outside the outline, within a root bracket of about 1e-10 s)."""
 
 BladeTouch = Literal["face", "rim", "edge"]
-
-
-class BladeSizes(TypedDict):
-    """
-    The ball's and blade's sizes, the keywords every gap, contact and touch function here takes (``**sizes``), m.
-    Typed so a caller's ``**sizes`` is checked key by key, and never mistaken for a function's other keywords
-    (``side``, ``edge``, ``tolerance``).
-    """
-
-    radius: float
-    half_thickness: float
-    half_length: float
-    half_width: float
 
 
 """``face``: the ball crossed the face plane over the blade. ``rim``: the ball was already within reach of the face
@@ -421,7 +400,7 @@ def blade_solid_contact(
 
 
 def _blade_state(blade: Any, t: float) -> tuple[Any, Any, Any, Any]:
-    """``PaddleSegment.at(t)``, or a :class:`lib.physics.reference.paddle_track.PaddleTrack`'s ``state(t)``."""
+    """``PaddleSegment.at(t)``, or any blade with a ``state(t)``."""
 
     at: Any = getattr(blade, "at", None)
     state: Any = at(t) if callable(at) else blade.state(t)
@@ -444,7 +423,7 @@ def segment_contact(
     """
     :func:`blade_contact` with the blade evaluated exactly at ``t`` on its segment.
 
-    :param blade: A ``PaddleSegment`` (its ``at``) or a ``PaddleTrack`` (its ``state``).
+    :param blade: A ``PaddleSegment`` (its ``at``) or any blade with a ``state(t)``.
     :param t: Contact time, s.
     :param centre: Ball centre at ``t``, m.
     :param edge: The blade with its rounded edge: :func:`blade_solid_contact` (``side`` must then be ``None``).
@@ -502,7 +481,7 @@ def blade_touch_time(
     gap is bisected to ``tolerance`` seconds; the result is the first time on the touching side, the oracle's root
     to within ``tolerance``. A touch that enters and leaves between the two ends is not searched for.
 
-    :param blade: A ``PaddleSegment`` or ``PaddleTrack``.
+    :param blade: A ``PaddleSegment`` or any blade with a ``state(t)``.
     :param t0: Step start, s.
     :param h: Step, s.
     :param ball: Ball state at ``t0`` (position, velocity; anything after them is ignored).
@@ -573,7 +552,7 @@ def blade_touch(
     :func:`blade_touch_time`, then the ball's centre on its constant-acceleration path at that time and
     :func:`segment_contact` there. The caller checks that the ball approaches the face
     (``(v - contact.surface_velocity) . contact.normal < 0``) before resolving the impact. With ``edge`` the blade has
-    its rounded edge (the oracle's default since Addendum 13): the touch may be ``contact.touch == "edge"``, which the
+    its rounded edge (the oracle's default): the touch may be ``contact.touch == "edge"``, which the
     caller resolves with ``rim_contact``.
 
     :return: ``(time, ball centre, contact)``, or ``None`` when the ball does not touch the blade by the step's end.
@@ -608,7 +587,6 @@ __all__ = [
     "EDGE_ITERATIONS",
     "OUTLINE_TOLERANCE",
     "BladeContact",
-    "BladeSizes",
     "BladeTouch",
     "blade_axes",
     "blade_contact",
