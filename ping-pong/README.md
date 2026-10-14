@@ -58,12 +58,18 @@ Each suite stays on one engine, so a session boots exactly one simulator.
 | `replay-evidence` | Isaac Sim | `replay_him_session[session-2]` | All of session 2 passes every replay test |
 | `robot-evidence` | Isaac Lab | `play_ping_pong_policy[g1-rally]` | The policy at 2048 worlds, 30 s, against the opponent |
 
+Recorded on Antioch production in the HIM Robotics organization, 2026-10-14 (read any of them with
+`antioch scenario show <run id>`):
+
 | Run | Result | Record |
 |---|---|---|
-| `replay-smoke` | pending | pending |
-| `robot-smoke` | pending | pending |
-| `replay-evidence` | pending | pending |
-| `robot-evidence` | pending | pending |
+| `replay-smoke` | Passed. First point: every test passes, drop rebounds 252.2–253.7 mm, 8 of 18 recorded strokes realised, 388/388 frames on every camera. Dead table: drops of 26.5 mm fail the physical invariants, as designed | `a386a0e271dc43b2a8821652c47666ac`, `e2d00a7f0b3146009fce89d621b0a50d` |
+| `robot-smoke` | Passed. Policy: 0.978 legal returns per receive over 986, no falls, blind control 0.000. Template: drop rebound 252.2 mm. Retarget: 5 of 10 probe strokes kept, negative control 10 of 10 rejected | `cae1406efcee4f2e864ccaa62196e8db`, `75fc279aca714122b38b64118d0af473`, `bdd3e07ec3764d7187ce5e47f01858ac` |
+| `replay-evidence` | Passed. All 22 points of session 2; 0 of 209 contacts gained energy; 4254/4254 frames per camera; 53 of 122 recorded strokes realised | `55e9e72446bd4de1a7e1601a55e7ec04` |
+| `robot-evidence` | Passed. 0.970 legal returns per receive (95 % interval 0.968–0.972) over 31,784 receives, 0.0015 falls per 10 s, mean rally 8.1 legal shots, blind control 0.000 | `fc36a10fdd804624a45c7a83fe3b545e` |
+
+The robot runs were recorded before the opponent was slimmed. `tests/robot/test_opponent_identity.py` shows the slimmed
+opponent plays every shot bit-identically.
 
 ## The replay
 
