@@ -1,7 +1,7 @@
 """
-The opponent's kinematic blade: its contact command flown through :class:`lib.physics.vectorized.BallBatch`.
+The opponent's kinematic blade: its contact command, flown each physics step by the robot scene's coupled ball.
 
-Within a window around its contact (default +-50 ms, design section 3.4) the blade moves with **constant linear and
+Within a window around its contact (default +-50 ms) the blade moves with **constant linear and
 angular velocity through the contact state**: ``p(t) = p_c + v (t - t_c)``, ``q(t) = exp(w (t - t_c)) q_c``. A
 :class:`lib.physics.vectorized.geometry.BladeTrack` built from the states at any step's two ends reproduces that
 motion exactly (a cubic Hermite through two points of a line with the line's slope is the line; the slerp between
@@ -22,7 +22,6 @@ from __future__ import annotations
 from typing import Any
 
 from lib.physics.vectorized._torch import torch
-from lib.physics.vectorized.geometry import BladeTrack
 
 from .ops import quat_from_rotvec, quat_multiply
 from .strike import ContactCommand
@@ -104,15 +103,6 @@ def step_states(
     )
 
 
-def blade_track(commands: list[ContactCommand], t0: float, h: float, parks: list[tuple[Tensor, Tensor]], window: float = WINDOW_S) -> BladeTrack:
-    """Every environment's blades (one per command set, in order) over one step: a ``BladeTrack`` of ``(N, B, ...)``."""
-
-    parts = [step_states(c, t0, h, p, q, window) for c, (p, q) in zip(commands, parks, strict=True)]
-    stacked = [torch.stack([part[i] for part in parts], 1) for i in range(6)]
-    p0, v0, q0, p1, v1, q1 = stacked
-    return BladeTrack.from_states(p0, v0, q0, p1, v1, q1, h)
-
-
 def idle_command(n: int, dtype: Any, device: Any) -> ContactCommand:
     """No swing: every blade parked."""
 
@@ -128,4 +118,4 @@ def idle_command(n: int, dtype: Any, device: Any) -> ContactCommand:
     )
 
 
-__all__ = ["WINDOW_S", "blade_track", "idle_command", "parked_pose", "step_states", "twist_state"]
+__all__ = ["WINDOW_S", "idle_command", "parked_pose", "step_states", "twist_state"]

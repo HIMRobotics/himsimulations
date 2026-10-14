@@ -189,12 +189,6 @@ def quat_to_matrix(q: Tensor) -> Tensor:
     )
 
 
-def game_from_reference(rotation: Tensor) -> Tensor:
-    """The game's blade axes of a reference blade rotation: columns (across, tip, normal) = (Y_ref, -X_ref, Z_ref)."""
-
-    return torch.stack([rotation[..., :, 1], -rotation[..., :, 0], rotation[..., :, 2]], -1)
-
-
 def reference_from_game(rotation: Tensor) -> Tensor:
     """The reference blade rotation of game blade axes: columns (handle, across, normal) = (-Y_game, X_game, Z_game)."""
 
@@ -261,11 +255,6 @@ def spin_frame(velocity: Tensor) -> tuple[Tensor, Tensor]:
     return e1, cross(v, e1)
 
 
-def spin_components(spin: Tensor, velocity: Tensor) -> Tensor:
-    e1, e2 = spin_frame(velocity)
-    return torch.stack([dot(spin, e1), dot(spin, e2)], -1)
-
-
 __all__ = [
     "blade_rotation",
     "cross",
@@ -273,7 +262,6 @@ __all__ = [
     "flip_sign",
     "frame_exp",
     "frame_log",
-    "game_from_reference",
     "norm",
     "quat_conjugate",
     "quat_from_matrix",
@@ -285,7 +273,6 @@ __all__ = [
     "rotate_about",
     "rotation_from_rotvec",
     "rows",
-    "spin_components",
     "spin_frame",
     "strike_frame",
     "unit",

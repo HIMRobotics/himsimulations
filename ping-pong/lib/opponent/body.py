@@ -41,7 +41,7 @@ from lib.physics.vectorized._torch import torch
 from lib.physics.vectorized.params import VecParams
 
 from .ballistics import compiled, fly
-from .ops import cross, dot, norm, quat_from_rotvec, quat_multiply, quat_to_matrix, reference_from_game, unit, yaw_vectors
+from .ops import dot, norm, quat_from_rotvec, quat_multiply, quat_to_matrix, reference_from_game, yaw_vectors
 from .strike import forward
 
 Tensor = Any
@@ -219,23 +219,6 @@ def execution_features(profile: Tensor, flip: Tensor, lead: Tensor, request: Con
     )
 
 
-def nudge_targets(request: Contact, held: Contact, face: Tensor, flip: Tensor) -> Tensor:
-    """:data:`NUDGE_TARGETS` of a held contact against its request (the struck face's tilt in the request blade's axes)."""
-
-    s_req = struck_normal(request.orientation, face)
-    z_held = quat_to_matrix(held.orientation)[:, :, 2]
-    s_held = torch.where((dot(z_held, s_req) >= 0.0)[:, None], z_held, -z_held)
-    axis = cross(s_req, s_held)
-    sin = norm(axis)
-    angle = torch.atan2(sin, dot(s_req, s_held))
-    rotvec = unit(axis) * angle[:, None]
-    m = quat_to_matrix(request.orientation)
-    dv = yaw_vectors(held.velocity - request.velocity, flip)
-    dp = yaw_vectors(held.position - request.position, flip)
-    dw = yaw_vectors(held.angular_velocity - request.angular_velocity, flip)
-    return torch.cat([dv, dp, dot(rotvec, m[:, :, 0])[:, None], dot(rotvec, m[:, :, 1])[:, None], dw], -1)
-
-
 def rubber_flipped(nudge: Tensor) -> Tensor:
     """Whether a drawn nudge meets the ball with the other rubber (its twelfth column; none without one)."""
 
@@ -298,7 +281,7 @@ def _reach_core(
 
 _reach_fast = compiled(_reach_core)
 """The reach core compiled on CUDA, with the opponent's shared fallback: if ``torch.compile`` fails (an image without
-a C compiler), it runs eagerly with one ``RuntimeWarning``, and :func:`.ballistics.compile_status` records it."""
+a C compiler), it runs eagerly with one ``RuntimeWarning``."""
 
 
 # ---- the tables and the mixture -------------------------------------------------------------------------------------
@@ -432,19 +415,6 @@ class NudgeModel:
 
     def standardise(self, features: Tensor) -> Tensor:
         return (features.to(self.x_mean.dtype) - self.x_mean) / self.x_std
-
-    def log_likelihood(self, features: Tensor, targets: Tensor, flip: Tensor | None = None) -> Tensor:
-        """``log p(nudge, flip | features)``; without ``flip`` the rubber head is left out (a certain "no flip")."""
-
-        from .intent import mdn_log_likelihood
-
-        x = self.standardise(features)
-        logits, means, scale, face_logits = self.module(x, x[:, :0])
-        z = (targets.to(x.dtype) - self.y_mean) / self.y_std
-        if flip is None:
-            certain = torch.full_like(face_logits, -60.0)
-            return mdn_log_likelihood(logits, means, scale, certain, z, torch.zeros_like(z[:, 0])) - torch.log(self.y_std).sum()
-        return mdn_log_likelihood(logits, means, scale, face_logits, z, flip.to(z.dtype)) - torch.log(self.y_std).sum()
 
     def draw(self, features: Tensor, generator: Any = None) -> Tensor:
         from .intent import categorical
@@ -713,7 +683,6 @@ __all__ = [
     "decision_features",
     "execution_features",
     "landing_class",
-    "nudge_targets",
     "rubber_flipped",
     "struck_normal",
 ]

@@ -1,7 +1,7 @@
 """
-Rallies and single receives of distilled players in :class:`lib.physics.vectorized.BallBatch`: the generator's rally
-loop (``Rally.play``) over many environments, for validation (O1-O4) and as the reference for wiring the opponent
-into a robot environment.
+The generator's rally loop (``Rally.play``) over many environments, as a state machine over an external ball: the ball
+(the robot scene's coupled ball) reports each step's contacts, and the loop decides, refines and executes each
+receiver's stroke. :class:`lib.policy.rally.Rallies` drives it, with the robot as player 0.
 
 Per environment the loop is the generator's: the receiver decides at the other player's hit plus 0.15 s from the
 ball it perceives then (``ball_at``: re-propagated from the last event's after-state); if the ball has not yet
@@ -20,19 +20,15 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-import numpy as np
-
 from lib.physics.vectorized._torch import torch
 from lib.physics.vectorized.geometry import STATIC_COUNT
 from lib.physics.vectorized.params import VecParams
-from lib.physics.vectorized.sim import BallBatch
 
 from .ballistics import propagate
-from .blade import blade_track, idle_command, parked_pose
+from .blade import idle_command, parked_pose
 from .opponent import ATTEMPT, Opponent, Plan
-from .ops import yaw_xy
+from .ready import BladePlan
 from .strike import ContactCommand
-from .strokes import BladePlan, Piece
 
 Tensor = Any
 
@@ -82,11 +78,6 @@ class PelvisBatch:
 
         return pelvis_eval(self.start[rows], self.end[rows], self.coeffs[rows], self.rest[rows], t)
 
-    def slots(self, rows: Tensor) -> tuple[Tensor, Tensor, Tensor, Tensor]:
-        """``(start, end, coefficients, rest)`` of ``rows``: the input :meth:`Opponent.decide_dense` takes."""
-
-        return self.start[rows], self.end[rows], self.coeffs[rows], self.rest[rows]
-
     def move(self, rows: Tensor, start: Tensor, end: Tensor, target: Tensor) -> None:
         """From the plan at ``start`` (keeping its velocity) to rest at ``target`` by ``end`` (rows where ``end > start``)."""
 
@@ -126,18 +117,14 @@ class ReceiveLog:
     def add(self, **columns: Tensor) -> None:
         self.parts.append({k: v.detach() for k, v in columns.items()})
 
-    def tensors(self) -> dict[str, np.ndarray]:
-        if not self.parts:
-            return {}
-        return {k: torch.cat([p[k] for p in self.parts]).cpu().numpy() for k in self.parts[0]}
-
 
 class RallySim:
     """
     ``N`` environments of rallies (or single receives) between distilled players.
 
     :param opponent: The players' decision process (both players use it, each with its own profile).
-    :param state: Ball states ``(N, 9)`` at ``t0``.
+    :param ball: The external ball: ``log``, one step's contact events (``env``, ``time``, ``surface``, ``point``,
+        ``after`` chunks), and ``active`` ``(N,)``.
     :param t0: Start time (per row the hitter's hit ``t_hit`` may be earlier).
     :param end: ``(N, 2)``: each player's end x-sign (player 0 is A).
     :param profile: ``(N, 2)``: each player's profile (0 suited, 1 opponent).
@@ -151,7 +138,7 @@ class RallySim:
     def __init__(
         self,
         opponent: Opponent,
-        state: Tensor,
+        ball: Any,
         *,
         t0: float,
         end: Tensor,
@@ -163,11 +150,9 @@ class RallySim:
         max_receives: int | None = None,
         dt: float = 5e-3,
         cadence: int = 8,
-        compile: bool | None = None,
         cap_time: float = 60.0,
         cap_shots: int = 60,
         first_blade: BladePlan | None = None,
-        seed: int = 0,
     ) -> None:
         self.opponent = opponent
         params: VecParams = opponent.params
@@ -177,7 +162,7 @@ class RallySim:
         dev, dtype = params.device, params.dtype
         self.dt, self.cadence = dt, cadence
         self.t = float(t0)
-        self.ball = BallBatch(params, state, t0=t0, terminal_kinds=("floor",), graze=True, compile=compile)
+        self.ball = ball
         self.end, self.profile, self.stance = end.to(dtype), profile.long(), stance.to(dtype)
         self.pelvis = PelvisBatch(stance.reshape(-1, 2) if pelvis is None else pelvis.reshape(-1, 2))
         self.hitter = hitter.long().clone()
@@ -197,7 +182,8 @@ class RallySim:
         self.t_b = torch.full((n,), float("nan"), dtype=dtype, device=dev)
         self.after_b = torch.zeros((n, 9), dtype=dtype, device=dev)
         self.ev_t = torch.full((n, 2), -float("inf"), dtype=dtype, device=dev)
-        self.ev_after = state.to(dtype).reshape(n, 1, 9).repeat(1, 2, 1).clone()
+        self.ev_after = torch.zeros((n, 2, 9), dtype=dtype, device=dev)
+        self.ev_after[:, :, 2] = -10.0  # no ball yet: parked below the floor
         self.ev_t[:, 1] = t0
         self.deadline = torch.full((n,), float("inf"), dtype=dtype, device=dev)
         self.plan: Plan = opponent._empty_plan(
@@ -213,44 +199,31 @@ class RallySim:
             torch.full((n,), -1, dtype=torch.long, device=dev),
         )
         self.commands = [idle_command(n, dtype, dev), idle_command(n, dtype, dev)]
-        if opponent.body is not None:  # body-first: the contact tick's states (NaN: the constant twist)
-            for c in self.commands:
-                c.tick0 = (
-                    torch.full((n,), float("nan"), dtype=dtype, device=dev),
-                    torch.zeros((n, 3), dtype=dtype, device=dev),
-                    torch.zeros((n, 3), dtype=dtype, device=dev),
-                )
-                c.tick1 = (
-                    torch.full((n,), float("nan"), dtype=dtype, device=dev),
-                    torch.zeros((n, 3), dtype=dtype, device=dev),
-                    torch.zeros((n, 3), dtype=dtype, device=dev),
-                )
+        for c in self.commands:  # the contact tick's states (NaN: the constant twist)
+            c.tick0 = (
+                torch.full((n,), float("nan"), dtype=dtype, device=dev),
+                torch.zeros((n, 3), dtype=dtype, device=dev),
+                torch.zeros((n, 3), dtype=dtype, device=dev),
+            )
+            c.tick1 = (
+                torch.full((n,), float("nan"), dtype=dtype, device=dev),
+                torch.zeros((n, 3), dtype=dtype, device=dev),
+                torch.zeros((n, 3), dtype=dtype, device=dev),
+            )
         self.parks = [parked_pose(self.end[:, k], params.table_half_length, params.table_height) for k in range(2)]
         self.log = ReceiveLog()
-        # Each player's blade plan (paddle-first): at rest at a ready pose, then each stroke's follow-through and
-        # recovery (the generator's ``PaddleTrack`` after ``schedule``), for the next stroke's check.
+        # The generator draws each player's ready pose here; the draws advance the opponent's random stream as its own do.
         flat_profile = self.profile.reshape(-1)
         flat_stance = self.stance.reshape(-1, 2)
         flat_flip = self.end.reshape(-1) > 0.0
         env2 = torch.arange(n, device=dev).repeat_interleave(2)
         half = (params.table_half_length[env2], params.table_half_width[env2])
-        self.blade_rest = opponent.strokes.draw_ready(flat_profile, flat_stance, flat_flip, -params.table_height[env2], half, opponent.generator)
-        zero = torch.zeros(2 * n, dtype=dtype, device=dev)
-        q = torch.zeros((2 * n, 4), dtype=dtype, device=dev)
-        q[:, 0] = 1.0
-        self.follow = Piece(
-            zero.clone(), zero.clone(), torch.zeros((2 * n, 6, 3), dtype=dtype, device=dev), torch.zeros((2 * n, 6, 3), dtype=dtype, device=dev), q.clone()
-        )
-        self.recover = Piece(
-            zero.clone(), zero.clone(), torch.zeros((2 * n, 6, 3), dtype=dtype, device=dev), torch.zeros((2 * n, 6, 3), dtype=dtype, device=dev), q.clone()
-        )
-        self.has_stroke = torch.zeros(2 * n, dtype=torch.bool, device=dev)
+        opponent.ready_poses.draw_ready(flat_profile, flat_stance, flat_flip, -params.table_height[env2], half, opponent.generator)
         self.first_blade = first_blade
-        # Body-first: each player's hand before its first stroke is its body's start pose; after a stroke, see
-        # ``_hand_at``. The time of each player's last executed contact.
-        self.body_mode = opponent.body is not None
+        # Each player's hand before its first stroke is its body's start pose; after a stroke, see ``_hand_at``. The time
+        # of each player's last executed contact.
         self.last_contact = torch.full((2 * n,), -float("inf"), dtype=dtype, device=dev)
-        self.hand_start = opponent.body.start_hand(flat_profile, flat_stance, flat_flip, opponent.generator) if opponent.body is not None else None
+        self.hand_start = opponent.body.start_hand(flat_profile, flat_stance, flat_flip, opponent.generator)
         self.steps = 0
         self.decide_seconds = 0.0
         self._log_seen = 0
@@ -266,44 +239,6 @@ class RallySim:
         return propagate(self.params, after, rows, t - t_ev)
 
     # ---- the loop --------------------------------------------------------------------------------
-
-    def run(self, max_time: float) -> None:
-        """Step until every environment finished or ``max_time`` (absolute)."""
-
-        while self.t < max_time - 1e-12:
-            self.step()
-            if bool(self.finished.all()):
-                break
-
-    def step(self) -> None:
-        track = blade_track(self.commands, self.t, self.dt, self.parks)
-        self.ball.step(self.dt, track)
-        self.t += self.dt
-        self.steps += 1
-        self._events()
-        inactive = ~self.ball.active
-        self.finished |= inactive
-        over = self.phase == OVER
-        self.finished |= over & (self.static_count >= 2)
-        cap = ~self.finished & ((self.t >= self.cap_time) | (self.shots >= self.cap_shots))
-        if bool(cap.any()):
-            self.capped |= cap
-            self.finished |= cap
-        missed = (self.phase == EXECUTED) & (self.t > self.deadline)
-        if bool(missed.any()):
-            self.phase = torch.where(missed, torch.full_like(self.phase, OVER), self.phase)
-            self.over_reason = torch.where(missed, torch.full_like(self.over_reason, 4), self.over_reason)
-        self.ball.active &= ~self.finished
-        if self.steps % self.cadence == 0:
-            self._process()
-        else:
-            due = (
-                ((self.phase == REFINE_DUE) & (self.t_due <= self.t))
-                | (self.phase == FINALIZE_DUE)
-                | ((self.phase == PRE_BOUNCE) & (self.t >= self.plan.first.time - 0.03))
-            )
-            if bool((due & (self.plan.first.time - self.t < 0.06 + self.dt)).any()):
-                self._process(decisions=False)
 
     def _events(self) -> None:
         log = self.ball.log
@@ -401,13 +336,6 @@ class RallySim:
                 fb = self.first_blade.take(rows)
                 for name in ("p", "v", "a", "q", "w"):
                     getattr(blade, name)[first] = getattr(fb, name)[first]
-        pelvis = self.pelvis
-
-        def track(sub: Tensor, times: Tensor) -> tuple[Tensor, Tensor]:
-            r_rows = slots[sub].repeat_interleave(times.shape[1])
-            p, v = pelvis.at(r_rows, times.reshape(-1))
-            return p.reshape((*times.shape, 2)), v.reshape((*times.shape, 2))
-
         plan = opp.decide(
             rows,
             self.profile[rows, k],
@@ -421,7 +349,6 @@ class RallySim:
             self.t_b[rows],
             self.after_b[rows],
             blade,
-            track,
         )
         self.receives[rows] += 1
         self._store(rows, plan)
@@ -432,15 +359,7 @@ class RallySim:
             approach_start = torch.maximum(t_decide[attempt], self.t_hit[a_rows] + opp.rules.limits["footwork_latency_s"])
             self.pelvis.move(a_rows * 2 + ka, approach_start, plan.first.time[attempt] - 0.05, plan.pelvis_needed[attempt])
             idx = torch.nonzero(attempt).flatten()
-            self._set_command(a_rows, ka, (plan.held if self.body_mode else plan.first).take(idx))
-            if plan.follow is not None and plan.recover is not None and plan.ready is not None:
-                slot = a_rows * 2 + ka
-                for name in ("start", "end", "position", "rotation", "reference"):
-                    getattr(self.follow, name)[slot] = getattr(plan.follow, name)[idx]
-                    getattr(self.recover, name)[slot] = getattr(plan.recover, name)[idx]
-                self.blade_rest.p[slot] = plan.ready.p[idx]
-                self.blade_rest.q[slot] = plan.ready.q[idx]
-                self.has_stroke[slot] = True
+            self._set_command(a_rows, ka, plan.held.take(idx))
             pre = plan.pre_bounce[attempt]
             self.phase[a_rows] = torch.where(pre, torch.full_like(a_rows, PRE_BOUNCE), torch.full_like(a_rows, FINALIZE_DUE))
         no = rows[~attempt]
@@ -461,7 +380,7 @@ class RallySim:
             plan_tau=plan.first.time - plan.t_bounce,
             draw_tau=plan.draw_after_bounce_s,
             paddle_speed=torch.sqrt((plan.first.face_velocity**2).sum(-1)),
-            face=(plan.held if self.body_mode else plan.first).face,
+            face=plan.held.face,
             plausibility=plan.plausibility,
             draws_feasible=plan.draws_feasible,
             ood=plan.draw_ood,
@@ -472,25 +391,9 @@ class RallySim:
         )
 
     def _blade_at(self, slots: Tensor, t: Tensor) -> BladePlan:
-        """
-        Each player's blade plan state at ``t``: in its last follow-through or recovery, else held at its ready pose
-        (paddle-first); body-first, its hand (:meth:`_hand_at`).
-        """
+        """Each player's blade plan state at ``t``: its hand (:meth:`_hand_at`)."""
 
-        if self.body_mode:
-            return self._hand_at(slots, t)
-        rest = self.blade_rest.take(slots)
-        out = BladePlan(rest.p.clone(), torch.zeros_like(rest.p), torch.zeros_like(rest.p), rest.q.clone(), torch.zeros_like(rest.p))
-        has = self.has_stroke[slots]
-        follow, recover = self.follow.take(slots), self.recover.take(slots)
-        in_follow = has & (t >= follow.start) & (t <= follow.end)
-        in_recover = has & ~in_follow & (t >= recover.start) & (t <= recover.end)
-        for mask, piece in ((in_follow, follow), (in_recover, recover)):
-            if bool(mask.any()):
-                st = piece.state(t)
-                for name in ("p", "v", "a", "q", "w"):
-                    getattr(out, name)[mask] = getattr(st, name)[mask]
-        return out
+        return self._hand_at(slots, t)
 
     def _hand_at(self, slots: Tensor, t: Tensor) -> BladePlan:
         """
@@ -523,7 +426,7 @@ class RallySim:
         for f in dc_fields(self.plan):
             source = getattr(plan, f.name)
             target = getattr(self.plan, f.name)
-            if source is None or f.name in ("follow", "recover", "ready"):
+            if source is None:
                 continue
             if isinstance(source, Strike):
                 for g in dc_fields(source):
@@ -591,99 +494,5 @@ class RallySim:
             exec_face=command.face,
         )
 
-    def receive_table(self) -> dict[str, np.ndarray]:
-        """The decisions, one row per receive (``ReceiveLog``; executions are separate rows with ``executed_t``)."""
 
-        decided = [p for p in self.log.parts if "status" in p]
-        executed = [p for p in self.log.parts if "executed_t" in p]
-        out = {k: torch.cat([p[k] for p in decided]).cpu().numpy() for k in decided[0]} if decided else {}
-        if executed:
-            out["exec_env"] = torch.cat([p["env"] for p in executed]).cpu().numpy()
-            out["exec_t"] = torch.cat([p["executed_t"] for p in executed]).cpu().numpy()
-            out["exec_noise"] = torch.cat([p["noise"] for p in executed]).cpu().numpy()
-            out["exec_refined"] = torch.cat([p["refined"] for p in executed]).cpu().numpy()
-            out["exec_speed"] = torch.cat([p["exec_speed"] for p in executed]).cpu().numpy()
-            out["exec_noise_applied"] = torch.cat([p["noise_applied"] for p in executed]).cpu().numpy()
-            out["exec_face"] = torch.cat([p["exec_face"] for p in executed]).cpu().numpy()
-        return out
-
-
-def table_frame_stance(local: np.ndarray, end: np.ndarray) -> np.ndarray:
-    """Stances drawn in the hitter frame to the table frame for players at ``end``."""
-
-    return np.where((end > 0)[:, None], -local, local)
-
-
-def yaw_stance(stance_local: Tensor, end: Tensor) -> Tensor:
-    return yaw_xy(stance_local, end > 0.0)
-
-
-@dataclass
-class Setup:
-    """The start of ``N`` episodes: the ball, who hit it and when, ends, profiles, stances."""
-
-    state: np.ndarray
-    t0: float
-    end: np.ndarray
-    profile: np.ndarray
-    stance: np.ndarray
-    hitter: np.ndarray
-    t_hit: np.ndarray
-    feed: bool = True
-    pelvis: np.ndarray | None = None
-
-    def tensors(self, device: Any, dtype: Any) -> dict[str, Tensor]:
-        def t(x: np.ndarray, kind: Any = None) -> Tensor:
-            return torch.as_tensor(x, dtype=kind or dtype, device=device)
-
-        out = {
-            "state": t(self.state),
-            "end": t(self.end),
-            "profile": t(self.profile, torch.long),
-            "stance": t(self.stance),
-            "hitter": t(self.hitter, torch.long),
-            "t_hit": t(self.t_hit),
-        }
-        if self.pelvis is not None:
-            out["pelvis"] = t(self.pelvis)
-        return out
-
-
-def feed_setup(rules: Any, n: int, rng: np.random.Generator, world: Any) -> Setup:
-    """
-    ``n`` feed-started episodes as ``generate.build_rally`` draws them: the robot's end, both stances, the feeder (the
-    suited player with the recorded share), a recorded first shot with its jitter, and when the feeder hit it (traced
-    back under the world's flight to the feeder's end line, at most 0.6 s).
-    """
-
-    from lib.physics.reference.flight import FlightModel, rk4_step
-
-    robot_end = np.where(rng.random(n) < 0.5, 1.0, -1.0)
-    end = np.column_stack([robot_end, -robot_end])
-    profile = np.tile(np.array([0, 1]), (n, 1))
-    stance = np.zeros((n, 2, 2))
-    for k in range(2):
-        local = rules.draw_stance(np.full(n, k), rng)
-        stance[:, k] = table_frame_stance(local, end[:, k])
-    feeder = np.where(rng.random(n) < rules.header["feed_profile_share"], 0, 1)
-    _index, local_feed = rules.draw_feed(feeder, rng)
-    flip = end[np.arange(n), feeder] > 0
-    state = local_feed.copy()
-    for start in (0, 3, 6):
-        state[flip, start : start + 2] *= -1.0
-    model = FlightModel.from_params(world)
-    t_hit = np.zeros(n)
-    for i in range(n):
-        y = [float(v) for v in state[i]]
-        t = 0.0
-        sign = -1.0 if flip[i] else 1.0
-        while t > -0.6:
-            y = rk4_step(model, y, -1e-3 * 10)
-            t -= 0.01
-            if sign * y[0] <= -1.40 or y[2] < world.ball.radius:
-                break
-        t_hit[i] = t
-    return Setup(state, 0.0, end, profile, stance, feeder, t_hit, True)
-
-
-__all__ = ["AWAIT", "EXECUTED", "OVER", "PelvisBatch", "RallySim", "ReceiveLog", "Setup", "feed_setup", "table_frame_stance"]
+__all__ = ["AWAIT", "EXECUTED", "OVER", "PelvisBatch", "RallySim", "ReceiveLog"]

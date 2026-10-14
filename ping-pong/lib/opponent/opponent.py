@@ -15,17 +15,15 @@ A decision, per receiving environment, at the other player's hit plus the cited 
    intent's, plus the footwork shortfall at 1 s per metre;
 5. the launch to the intended landing and flight time, the face normal for the intended spin (two passes), the
    rigid-blade strike with the donor's grip roll;
-6. the stroke's feasibility: body-first (the v1 release, the default), the body runtime's verdict and the contact it
-   holds (:mod:`.body`: the donor reach rule, the fitted acceptance and nudge, the same-outcome rule); paddle-first,
-   the motion check against the capture's limits (:mod:`.strokes`);
+6. the stroke's feasibility, body-first: the body runtime's verdict and the contact it holds (:mod:`.body`: the donor
+   reach rule, the fitted acceptance and nudge, the same-outcome rule);
 7. the first intent that is feasible and plausible (the 891-state density), else the most plausible feasible one,
    else ``unreachable``.
 
 After the real bounce plus 0.11 s, :meth:`Opponent.refine` replans within the cited late-correction caps; then
 :meth:`Opponent.execute` applies the generator's execution noise (body-first, as the body re-holds it, with the
 generator's fallbacks to part of the noise or the first plan) and returns the kinematic contact command
-(:class:`lib.opponent.strike.ContactCommand`) that :mod:`.blade` flies through
-:class:`lib.physics.vectorized.BallBatch`.
+(:class:`lib.opponent.strike.ContactCommand`) that :mod:`.blade` turns into the blade the ball meets.
 """
 
 from __future__ import annotations
@@ -38,7 +36,7 @@ from lib.physics.vectorized.params import VecParams
 
 from .ballistics import fly, path_grid, predict_bounce, propagate, solve_launch
 from .body import BodyFeasibility, Contact, classify_landing
-from .intent import IntentDraws, KnnIntent, MdnIntent
+from .intent import IntentDraws, MdnIntent, OutOfDistribution
 from .ops import (
     cross,
     dot,
@@ -57,9 +55,9 @@ from .ops import (
     yaw_vectors,
     yaw_xy,
 )
+from .ready import BladePlan, ReadyPoses
 from .rules import RuleBook
 from .strike import ContactCommand, Strike, execute, forward, normal_for_spin, plan_strike
-from .strokes import BladePlan, Piece, StrokeCheck
 
 TICK_S = 1.0 / 24.0
 
@@ -87,11 +85,6 @@ class OpponentConfig:
     plausibility: bool = True
     draws: int | None = None
     paddle_speed_scale: float = 1.0
-    stroke_check: bool = True
-    """Hold each stroke to the target mode's feasibility (``False``: none, a diagnostic)."""
-    feasibility: str | None = None
-    """``body`` (the v1 release's body-first runtime, distilled: :mod:`.body`), ``paddle`` (the paddle-first motion check,
-    :mod:`.strokes`) or ``none``; ``None`` takes ``body`` when the rules carry it."""
     profiles: tuple[int, ...] = (0, 1)
     """The profiles that will decide (a static hint for the body-first reach rule: an environment whose opponent is
     always profile 1 passes ``(1,)`` and halves its cost)."""
@@ -121,7 +114,7 @@ class Plan:
     first: Strike
     final: Strike
     held: Strike
-    """Body-first: the contact the body holds for ``first`` (the runtime's nudge); paddle-first: ``first``."""
+    """The contact the body holds for ``first`` (the runtime's nudge)."""
     pelvis_needed: Tensor
     intended_landing: Tensor
     intended_flight_s: Tensor
@@ -130,16 +123,6 @@ class Plan:
     noise: Tensor = field(default=None)
     noise_applied: Tensor = field(default=None)
     """The share of the execution noise played (1, 0.5, 0.25, 0; -1 the first plan as held, ``execute_kept_first``)."""
-    follow: Piece | None = None
-    recover: Piece | None = None
-    ready: BladePlan | None = None
-
-    def take(self, index: Tensor) -> Plan:
-        out = {}
-        for f in fields(self):
-            v = getattr(self, f.name)
-            out[f.name] = None if v is None else (v.take(index) if isinstance(v, (Strike, Piece, BladePlan)) else v[index])
-        return Plan(**out)
 
     @property
     def swing_start(self) -> Tensor:
@@ -184,13 +167,13 @@ class Opponent:
     The distilled human receiver over a batch of environments.
 
     :param params: The environments' physics (the world; the players' belief equals it, as in v1 data).
-    :param intent: The h2 model (:class:`MdnIntent`, or :class:`KnnIntent` for the generator's exact draw).
+    :param intent: The h2 model (:class:`MdnIntent`).
     :param rules: The generator's rules.
     :param config: The knobs.
     :param generator: A ``torch.Generator`` for reproducible draws.
     """
 
-    def __init__(self, params: VecParams, intent: KnnIntent | MdnIntent, rules: RuleBook, config: OpponentConfig | None = None, generator: Any = None) -> None:
+    def __init__(self, params: VecParams, intent: MdnIntent, rules: RuleBook, config: OpponentConfig | None = None, generator: Any = None) -> None:
         self.params = params
         self.intent = intent
         self.rules = rules
@@ -210,25 +193,11 @@ class Opponent:
             device=params.device,
         )
         self.counters: dict[str, int] = {}
-        self.strokes = StrokeCheck(rules)
-        mode = self.config.feasibility or ("body" if "body" in rules.header else "paddle")
-        if not self.config.stroke_check and self.config.feasibility is None:
-            mode = "none"
-        if mode not in ("body", "paddle", "none"):
-            raise ValueError(f"feasibility {mode!r}: body, paddle or none")
-        self.feasibility = mode
-        self.body = BodyFeasibility(rules.arrays, rules.header["body"], params.device, params.dtype) if mode == "body" else None
-        self._dense = False
-        """Inside :meth:`decide_dense`: masks instead of row compaction, fixed step counts, no host synchronisation."""
-        self._ood = intent if isinstance(intent, KnnIntent) else KnnIntent(rules)
-
-    @staticmethod
-    def compile_status() -> dict[str, Any]:
-        """Whether the hot bodies run compiled or fell back to eager (:func:`.ballistics.compile_status`): log it with results."""
-
-        from .ballistics import compile_status
-
-        return compile_status()
+        self.ready_poses = ReadyPoses(rules)
+        if "body" not in rules.header:
+            raise ValueError("the opponent's rules carry no body-first feasibility (rules v2 or later)")
+        self.body = BodyFeasibility(rules.arrays, rules.header["body"], params.device, params.dtype)
+        self._ood = OutOfDistribution(rules)
 
     # ---- perception -------------------------------------------------------------------------------
 
@@ -239,8 +208,6 @@ class Opponent:
         return ball + z * self.perception_sd * self.noise_scale
 
     def _count(self, name: str, value: Tensor | int) -> None:
-        if self._dense:
-            return
         self.counters[name] = self.counters.get(name, 0) + int(value)
 
     # ---- the decision ----------------------------------------------------------------------------
@@ -259,7 +226,6 @@ class Opponent:
         bounce_t: Tensor | None = None,
         bounce_state: Tensor | None = None,
         blade: BladePlan | None = None,
-        pelvis_track: Any = None,
         hazard_scale: Tensor | None = None,
     ) -> Plan:
         """
@@ -275,8 +241,6 @@ class Opponent:
         :param pelvis_now: The receiver's hips at ``t_decide`` (table frame).
         :param bounced: The ball has already bounced on the receiver's half (with ``bounce_t``, ``bounce_state``).
         :param blade: The receiver's blade plan state at the tick after the decision (default: at rest at its ready pose).
-        :param pelvis_track: ``(rows, times (R, S)) -> (positions, velocities)`` of the receiver's hips plan before
-            this stroke (default: at rest at ``pelvis_now``).
         :param hazard_scale: Per-row stop-hazard scale (default the config's): 0 for competitive points, the fit (0.6)
             for cooperative play.
         """
@@ -313,25 +277,12 @@ class Opponent:
         # ``draw_ready``: the recorded ready pose this stroke recovers to (redrawn at each decision, as the generator does).
         floor_z = -params.table_height[env[rows]]
         half = (params.table_half_length[env[rows]], params.table_half_width[env[rows]])
-        ready = self.strokes.draw_ready(profile[rows], stance[rows], flip[rows], floor_z, half, self.generator)
+        ready = self.ready_poses.draw_ready(profile[rows], stance[rows], flip[rows], floor_z, half, self.generator)
         begin = ready if blade is None else blade.take(rows)
-        if pelvis_track is None:
-            now_rows = pelvis_now[rows]
-
-            def track(sub: Tensor, times: Tensor) -> tuple[Tensor, Tensor]:
-                p = now_rows[sub][:, None, :].expand((*times.shape, 2))
-                return p, torch.zeros_like(p)
-
-        else:
-
-            def track(sub: Tensor, times: Tensor) -> tuple[Tensor, Tensor]:
-                return pelvis_track(rows[sub], times)
-
         draws = self.intent.draw(profile[rows], query, self.draws, generator=self.generator)
-        if not isinstance(self.intent, KnnIntent):
-            draws.ood = self._ood.out_of_distribution(profile[rows], query)[:, None].expand(rows.numel(), self.draws)
+        draws.ood = self._ood.out_of_distribution(profile[rows], query)[:, None].expand(rows.numel(), self.draws)
         self._count("ood", draws.ood[:, 0].sum())
-        chosen = self._plan_draws(plan, rows, draws, pelvis_now[rows], begin, ready, track, stance[rows])
+        chosen = self._plan_draws(plan, rows, draws, pelvis_now[rows], begin)
         status[rows] = torch.where(chosen, torch.full_like(rows, ATTEMPT), torch.full_like(rows, UNREACHABLE))
         plan.status = status
         self._count("unreachable", (~chosen).sum())
@@ -442,16 +393,8 @@ class Opponent:
         draws: IntentDraws,
         pelvis_now: Tensor,
         begin: BladePlan | None = None,
-        ready: BladePlan | None = None,
-        track: Any = None,
-        stance: Tensor | None = None,
-        allowed: Tensor | None = None,
     ) -> Tensor:
-        """
-        Make each draw concrete (``Rally.candidate``) and choose one per row; fills ``plan`` and returns ``chosen``.
-
-        :param allowed: Dense mode: the rows that may attempt (the others are computed and masked out).
-        """
+        """Make each draw concrete (``Rally.candidate``) and choose one per row; fills ``plan`` and returns ``chosen``."""
 
         params, rules = self.params, self.rules
         c = rules.constants
@@ -465,21 +408,16 @@ class Opponent:
         t_contact = t_contact.reshape(-1)
         pelvis = pelvis.reshape(-1, 2)
         feasible = found.reshape(-1).clone()
-        if allowed is not None:
-            feasible = feasible & allowed.repeat_interleave(d)
         self._count("reject_reach", (~feasible).sum())
-        dense = self._dense
-        steps = 40 if dense else None
-        live = torch.arange(r * d, device=feasible.device) if dense else torch.nonzero(feasible).flatten()
+        live = torch.nonzero(feasible).flatten()
         dtype, device = params.dtype, params.device
         n_all = r * d
         strikes = _empty_strike(n_all, dtype, device)
         density = torch.full((n_all,), -float("inf"), dtype=dtype, device=device)
         landing = torch.full((n_all, 2), float("nan"), dtype=dtype, device=device)
         flight_t = torch.full((n_all,), float("nan"), dtype=dtype, device=device)
-        follows = recovers = None
         helds: Strike | None = None
-        if dense or live.numel():
+        if live.numel():
             e, fl, b = env[live], flip[live], ball[live]
             margin = c["target_margin_m"]
             hl, hw = params.table_half_length[e], params.table_half_width[e]
@@ -500,7 +438,7 @@ class Opponent:
             guess = torch.where(have[:, None], yaw_vectors(torch.nan_to_num(guess_local), fl), ballistic)
             e1, e2 = spin_frame(guess)
             spin = flat.spin[live, 0:1] * e1 + flat.spin[live, 1:2] * e2
-            launch = solve_launch(params, e, b[:, 0:3], spin, target, flight, ballistic, steps=steps)
+            launch = solve_launch(params, e, b[:, 0:3], spin, target, flight, ballistic)
             v_out = launch.velocity
             ok = launch.ok & feasible[live]
             self._count("reject_launch", (~ok).sum())
@@ -518,7 +456,7 @@ class Opponent:
                 self._count("reject_strike", (ok & ~strike.ok).sum())
                 ok = ok & strike.ok
                 if npass == 0:
-                    second = solve_launch(params, e, b[:, 0:3], strike.spin_out, target, flight, v_out, steps=steps)
+                    second = solve_launch(params, e, b[:, 0:3], strike.spin_out, target, flight, v_out)
                     self._count("reject_launch_spin", (ok & ~second.ok).sum())
                     ok = ok & second.ok
                     v_out = torch.where(second.ok[:, None], second.velocity, v_out)
@@ -536,26 +474,15 @@ class Opponent:
                 [norm(u_l), brush, torch.asin(n_l[:, 2].clamp(-1.0, 1.0)), torch.atan2(n_l[:, 1], n_l[:, 0]), offset[:, 0], offset[:, 1], b[:, 2]], -1
             )
             dens = rules.plausibility(coords)
-            intended = fly(params, torch.cat([b[:, 0:3], strike.v_out, strike.spin_out], -1), e, steps=steps)
-            if self.feasibility == "body" and begin is not None:
+            intended = fly(params, torch.cat([b[:, 0:3], strike.v_out, strike.spin_out], -1), e)
+            if begin is not None:
                 wanted = classify_landing(params, e, b, intended)
-                ok, held = self._body(plan, rows, live, ok, strike, t_contact[live], pelvis[live], pelvis_now, begin, b, e, fl, wanted, steps)
+                ok, held = self._body(plan, rows, live, ok, strike, t_contact[live], pelvis[live], pelvis_now, begin, b, e, fl, wanted)
                 if helds is None:
                     helds = _empty_strike(n_all, dtype, device)
                 _scatter_strike(helds, live, held)
                 strike.ok = ok
                 _scatter_strike(strikes, live, strike)
-            elif self.feasibility == "paddle" and begin is not None and ready is not None and track is not None and stance is not None:
-                stroke_ok, follow, recover = self._stroke(plan, rows, live, ok, strike, t_contact[live], pelvis[live], begin, ready, track, stance)
-                self._count("reject_stroke", (ok & ~stroke_ok).sum())
-                ok = ok & stroke_ok
-                strike.ok = ok
-                _scatter_strike(strikes, live, strike)
-                if follows is None or recovers is None:
-                    follows = _empty_piece(n_all, dtype, device)
-                    recovers = _empty_piece(n_all, dtype, device)
-                _scatter_piece(follows, live, follow)
-                _scatter_piece(recovers, live, recover)
             density[live] = torch.where(ok, dens, torch.full_like(dens, -float("inf")))
             landing[live] = intended.landing
             flight_t[live] = intended.t
@@ -570,9 +497,6 @@ class Opponent:
         pick = torch.where(first_good < d, first_good, best_density)
         chosen = feasible.any(1)
         flat_pick = torch.arange(r, device=device) * d + pick
-        if dense:
-            self._fill_dense(plan, chosen, flat_pick, strikes, pelvis, landing, flight_t, density, flat, feasible, follows, recovers, ready, helds)
-            return chosen
         sel = torch.nonzero(chosen).flatten()
         target_rows = rows[sel]
         source = flat_pick[sel]
@@ -590,156 +514,7 @@ class Opponent:
         plan.draw_ood[target_rows] = flat.ood[source]
         plan.draw_donor[target_rows] = flat.donor[source]
         plan.draws_feasible[rows] = feasible.sum(1)
-        if follows is not None and recovers is not None and ready is not None:
-            if plan.follow is None or plan.recover is None or plan.ready is None:
-                m_all = plan.status.shape[0]
-                plan.follow = _empty_piece(m_all, dtype, device)
-                plan.recover = _empty_piece(m_all, dtype, device)
-                plan.ready = BladePlan.at_rest(torch.zeros((m_all, 3), dtype=dtype, device=device), torch.zeros((m_all, 4), dtype=dtype, device=device))
-            plan_follow, plan_recover, plan_ready = plan.follow, plan.recover, plan.ready
-            _scatter_piece(plan_follow, target_rows, follows.take(source))
-            _scatter_piece(plan_recover, target_rows, recovers.take(source))
-            sel_ready = ready.take(sel)
-            plan_ready.p[target_rows] = sel_ready.p
-            plan_ready.q[target_rows] = sel_ready.q
         return chosen
-
-    def _stroke_slots(
-        self, track: Any, owner: Tensor, approach: Tensor, a_start: Tensor, a_end: Tensor, coeff_a: Tensor, r_start: Tensor, coeff_r: Tensor, return_s: float
-    ) -> tuple[Tensor, Tensor, Tensor, Tensor]:
-        """
-        The hips over this stroke as move slots (``PelvisTrack.move`` twice: the approach, then the return to the
-        stance), from the receiver's current slots: moves starting at or after the first new move are dropped and the
-        rest end by then (a move without an approach leaves the old plan until the return).
-        """
-
-        start, end, coeffs, rest = track.slots(owner)
-        cut = torch.where(approach, a_start, r_start)[:, None]
-        later = start >= cut
-        inf = torch.full_like(start, float("inf"))
-        start = torch.where(later, inf, start)
-        end = torch.where(later, inf, torch.minimum(end, cut))
-        a_s = torch.where(approach, a_start, torch.full_like(a_start, float("inf")))
-        start = torch.cat([start, a_s[:, None], r_start[:, None]], 1)
-        end = torch.cat([end, torch.where(approach, a_end, a_s)[:, None], (r_start + return_s)[:, None]], 1)
-        coeffs = torch.cat([coeffs, coeff_a[:, None], coeff_r[:, None]], 1)
-        return start, end, coeffs, rest
-
-    def _fill_dense(
-        self,
-        plan: Plan,
-        chosen: Tensor,
-        flat_pick: Tensor,
-        strikes: Strike,
-        pelvis: Tensor,
-        landing: Tensor,
-        flight_t: Tensor,
-        density: Tensor,
-        flat: IntentDraws,
-        feasible: Tensor,
-        follows: Piece | None,
-        recovers: Piece | None,
-        ready: BladePlan | None,
-        helds: Strike | None = None,
-    ) -> None:
-        """The chosen draw of every row into ``plan`` by masks (dense mode: the plan's rows are all the rows)."""
-
-        def put(target: Tensor, value: Tensor) -> None:
-            target.copy_(torch.where(chosen.reshape(chosen.shape + (1,) * (target.dim() - 1)), value.to(target.dtype), target))
-
-        held_source = strikes if helds is None else helds
-        for f in fields(plan.first):
-            put(getattr(plan.first, f.name), getattr(strikes, f.name)[flat_pick])
-            put(getattr(plan.final, f.name), getattr(strikes, f.name)[flat_pick])
-            put(getattr(plan.held, f.name), getattr(held_source, f.name)[flat_pick])
-        put(plan.pelvis_needed, pelvis[flat_pick])
-        put(plan.intended_landing, landing[flat_pick])
-        put(plan.intended_flight_s, flight_t[flat_pick])
-        put(plan.plausibility, density.reshape(-1)[flat_pick])
-        put(plan.draw_after_bounce_s, flat.after_bounce_s[flat_pick])
-        put(plan.draw_spin, flat.spin[flat_pick])
-        put(plan.draw_face, flat.face[flat_pick])
-        put(plan.draw_tip, flat.tip[flat_pick])
-        put(plan.draw_ood, flat.ood[flat_pick])
-        put(plan.draw_donor, flat.donor[flat_pick])
-        plan.draws_feasible.copy_(feasible.sum(1))
-        if follows is not None and recovers is not None and ready is not None:
-            m_all = plan.status.shape[0]
-            dtype, device = self.params.dtype, self.params.device
-            if plan.follow is None or plan.recover is None or plan.ready is None:
-                plan.follow = _empty_piece(m_all, dtype, device)
-                plan.recover = _empty_piece(m_all, dtype, device)
-                plan.ready = BladePlan.at_rest(torch.zeros((m_all, 3), dtype=dtype, device=device), torch.zeros((m_all, 4), dtype=dtype, device=device))
-            for name in ("start", "end", "position", "rotation", "reference"):
-                put(getattr(plan.follow, name), getattr(follows, name)[flat_pick])
-                put(getattr(plan.recover, name), getattr(recovers, name)[flat_pick])
-            put(plan.ready.p, ready.p)
-            put(plan.ready.q, ready.q)
-
-    def decide_dense(
-        self,
-        env: Tensor,
-        profile: Tensor,
-        end: Tensor,
-        t_decide: Tensor,
-        t_hit: Tensor,
-        ball: Tensor,
-        stance: Tensor,
-        pelvis_now: Tensor,
-        seen: Tensor,
-        seen_t: Tensor,
-        seen_state: Tensor,
-        blade: BladePlan,
-        slots: tuple[Tensor, Tensor, Tensor, Tensor],
-        hazard_scale: Tensor,
-        valid: Tensor,
-    ) -> Plan:
-        """
-        :meth:`decide` for every row at once, without row compaction or host synchronisation (CUDA-graph capturable).
-
-        :param slots: The receiver's hips plan as :class:`lib.opponent.rally.PelvisBatch` slots
-            ``(start (M, K), end (M, K), coefficients (M, K, 6, 2), rest (M, 2))``.
-        :param valid: Rows that are real (padding rows decide nothing).
-        """
-
-        from .rally import pelvis_eval
-
-        self._dense = True
-        try:
-            params, rules = self.params, self.rules
-            m = env.shape[0]
-            dtype, device = params.dtype, params.device
-            flip = end > 0.0
-            perceived = self.perceive(ball)
-            predicted = predict_bounce(params, perceived, env, end, steps=38)
-            t_bounce = torch.where(seen, seen_t, t_decide + predicted.t)
-            bounce = torch.where(seen[:, None], seen_state + (perceived - ball), predicted.after)
-            known = (seen | predicted.ok) & valid
-            status = torch.full((m,), LET_GO, dtype=torch.long, device=device)
-            local = yaw_states(bounce, flip)
-            stance_local = yaw_xy(stance, flip)
-            speed_after = torch.sqrt(local[:, 3] ** 2 + local[:, 4] ** 2)
-            p_stop = hazard_scale * rules.stop_probability(profile, local[:, 0:2], t_bounce - t_hit, speed_after, stance_local)
-            u = torch.rand(m, dtype=dtype, device=device, generator=self.generator)
-            stop = known & (u < p_stop)
-            status = torch.where(stop, torch.full_like(status, STOP), status)
-            plan = self._empty_plan(env, profile, end, t_hit, t_decide, t_bounce, bounce, torch.logical_not(seen), p_stop, status)
-            allowed = known & ~stop
-            query = torch.stack([local[:, 0], local[:, 1], local[:, 3], local[:, 4], local[:, 5], stance_local[:, 0], stance_local[:, 1]], -1)
-            floor_z = -params.table_height[env]
-            half = (params.table_half_length[env], params.table_half_width[env])
-            ready = self.strokes.draw_ready_dense(profile, stance, flip, floor_z, half, self.generator)
-            track = _SlotTrack(*slots, pelvis_eval)
-
-            draws = self.intent.draw(profile, query, self.draws, generator=self.generator)
-            if not isinstance(self.intent, KnnIntent):
-                draws.ood = self._ood.out_of_distribution(profile, query)[:, None].expand(m, self.draws)
-            rows = torch.arange(m, device=device)
-            chosen = self._plan_draws(plan, rows, draws, pelvis_now, blade, ready, track, stance, allowed)
-            plan.status = torch.where(allowed, torch.where(chosen, torch.full_like(status, ATTEMPT), torch.full_like(status, UNREACHABLE)), status)
-            return plan
-        finally:
-            self._dense = False
 
     def _body(
         self,
@@ -756,7 +531,6 @@ class Opponent:
         env: Tensor,
         flip: Tensor,
         wanted: Tensor,
-        steps: int | None,
     ) -> tuple[Tensor, Strike]:
         """
         ``Rally._stroke_body`` at a decision for each live draw (body-first): the body runtime's verdict (:mod:`.body`:
@@ -784,8 +558,7 @@ class Opponent:
             hand.p,
             hand.v,
             self.generator,
-            steps,
-            tuple(self.config.profiles),
+            roles=tuple(self.config.profiles),
         )
         self._count("reject_body_reach", (ok & (cause == 1)).sum())
         self._count("reject_body_runtime", (ok & (cause == 2)).sum())
@@ -818,81 +591,18 @@ class Opponent:
             ok=ok,
         )
 
-    def _stroke(
-        self,
-        plan: Plan,
-        rows: Tensor,
-        live: Tensor,
-        ok: Tensor,
-        strike: Strike,
-        t_c: Tensor,
-        pelvis_needed: Tensor,
-        begin: BladePlan,
-        ready: BladePlan,
-        track: Any,
-        stance: Tensor,
-    ) -> tuple[Tensor, Piece, Piece]:
-        """``Rally.stroke`` (paddle-first) for each live draw: the stroke check against the capture's motion limits."""
-
-        d = self.draws
-        owner = live // d
-        env = plan.env[rows][owner]
-        profile = plan.profile[rows][owner]
-        flip = plan.end[rows][owner] > 0.0
-        t_decide = plan.t_decide[rows][owner]
-        t_hit = plan.t_hit[rows][owner]
-        t_from = (torch.floor(t_decide / TICK_S + 1e-9) + 1.0) * TICK_S
-        lim = self.rules.limits
-        ret = self.rules.constants["pelvis_return_s"]
-        a_start = torch.maximum(t_decide, t_hit + lim["footwork_latency_s"])
-        a_end = t_c - 0.05
-        approach = a_end > a_start
-        p0, v0 = track(owner, a_start[:, None])
-        p0, v0 = p0[:, 0], v0[:, 0]
-        coeff_a = _quintic2(p0, v0, pelvis_needed, (a_end - a_start).clamp_min(1e-6))
-        r_start = t_c + ret[0]
-        # The return move starts from the plan at r_start: the approach's end (at rest) or, without an approach, the
-        # old plan there.
-        q0, w0 = track(owner, r_start[:, None])
-        r_from = torch.where(approach[:, None], pelvis_needed, q0[:, 0])
-        r_vel = torch.where(approach[:, None], torch.zeros_like(pelvis_needed), w0[:, 0])
-        coeff_r = _quintic2(r_from, r_vel, stance[owner], torch.full_like(t_c, ret[1] - ret[0]))
-
-        def pelvis(sub: Tensor, times: Tensor) -> Tensor:
-            current, _ = track(owner[sub], times)
-            a = _eval2(coeff_a[sub], (times - a_start[sub][:, None]).clamp(min=0.0).minimum((a_end - a_start)[sub][:, None].clamp_min(0.0)))
-            r = _eval2(coeff_r[sub], (times - r_start[sub][:, None]).clamp(min=0.0, max=ret[1] - ret[0]))
-            use_a = approach[sub][:, None] & (times >= a_start[sub][:, None])
-            out = torch.where(use_a[..., None], a, current)
-            return torch.where((times >= r_start[sub][:, None])[..., None], r, out)
-
-        contact = BladePlan(strike.position, strike.velocity, torch.zeros_like(strike.position), strike.orientation, strike.angular_velocity)
-        floor_z = -self.params.table_height[env]
-        half = (self.params.table_half_length[env], self.params.table_half_width[env])
-        if self._dense:
-            slots = self._stroke_slots(track, owner, approach, a_start, a_end, coeff_a, r_start, coeff_r, ret[1] - ret[0])
-            result, follow, recover = self.strokes.check_dense(profile, flip, begin.take(owner), t_from, t_c, contact, slots, ready.take(owner), floor_z, half)
-        else:
-            result, follow, recover = self.strokes.check(profile, flip, begin.take(owner), t_from, t_c, contact, pelvis, ready.take(owner), floor_z, half)
-        return result & ok, follow, recover
-
     # ---- the late correction and the execution ----------------------------------------------------
 
-    def refine(
-        self, plan: Plan, rows: Tensor, t_now: Tensor, ball_now: Tensor, t_bounce: Tensor, pelvis_at_contact: Tensor, mask: Tensor | None = None
-    ) -> None:
+    def refine(self, plan: Plan, rows: Tensor, t_now: Tensor, ball_now: Tensor, t_bounce: Tensor, pelvis_at_contact: Tensor) -> None:
         """
         ``Rally.refine`` for ``rows`` of ``plan``: perceive at ``t_now`` (the real bounce plus 0.11 s), replan to the
         intended landing at the drawn contact time and move the first plan towards it within the cited caps.
 
         :param pelvis_at_contact: The receiver's hips at the drawn contact time (its track).
-        :param mask: Rows that may refine (the others keep their plan); with it nothing synchronises with the host
-            (fixed step counts), so a call can be graph-captured.
         """
 
         if rows.numel() == 0:
             return
-        steps = 70 if mask is not None else None
         params, rules = self.params, self.rules
         lim = rules.limits
         env = plan.env[rows]
@@ -901,10 +611,8 @@ class Opponent:
         perceived = self.perceive(ball_now)
         t_contact = t_bounce + plan.draw_after_bounce_s[rows]
         go = t_contact >= t_now + 0.03
-        if mask is not None:
-            go = go & mask
-        ball = propagate(params, perceived, env, torch.where(go, t_contact - t_now, torch.zeros_like(t_now)), steps=steps)
-        launch = solve_launch(params, env, ball[:, 0:3], first.spin_out, plan.intended_landing[rows], plan.intended_flight_s[rows], first.v_out, steps=steps)
+        ball = propagate(params, perceived, env, torch.where(go, t_contact - t_now, torch.zeros_like(t_now)))
+        launch = solve_launch(params, env, ball[:, 0:3], first.spin_out, plan.intended_landing[rows], plan.intended_flight_s[rows], first.v_out)
         go = go & torch.isfinite(launch.residual) & (launch.residual <= rules.constants["launch_residual_max"])
         normal, _res, n_ok = normal_for_spin(params, env, ball, launch.velocity, plan.draw_spin[rows], first.normal)
         go = go & n_ok
@@ -949,8 +657,7 @@ class Opponent:
         merged = final.where(go, first)
         _scatter_strike(plan.final, rows, merged)
         plan.refined[rows] = go
-        if mask is None:
-            self._count("refined", go.sum())
+        self._count("refined", go.sum())
 
     def execute(self, plan: Plan, rows: Tensor, t_now: Tensor | None = None) -> ContactCommand:
         """
@@ -964,7 +671,7 @@ class Opponent:
         command.active = plan.status[rows] == ATTEMPT
         plan.noise[rows] = noise
         plan.noise_applied[rows] = torch.ones_like(final.time)
-        if self.feasibility != "body" or t_now is None:
+        if t_now is None:
             return command
         return self._execute_body(plan, rows, final, command, t_now)
 
@@ -1035,47 +742,6 @@ class Opponent:
         return command
 
 
-class _SlotTrack:
-    """The receivers' hips plans as move slots: callable as a track, and its slots for the dense stroke check."""
-
-    def __init__(self, start: Tensor, end: Tensor, coeffs: Tensor, rest: Tensor, evaluate: Any) -> None:
-        self.start, self.end, self.coeffs, self.rest, self.evaluate = start, end, coeffs, rest, evaluate
-
-    def __call__(self, sub: Tensor, times: Tensor) -> tuple[Tensor, Tensor]:
-        return self.evaluate(self.start[sub], self.end[sub], self.coeffs[sub], self.rest[sub], times)
-
-    def slots(self, sub: Tensor) -> tuple[Tensor, Tensor, Tensor, Tensor]:
-        return self.start[sub], self.end[sub], self.coeffs[sub], self.rest[sub]
-
-
-def _quintic2(x0: Tensor, v0: Tensor, x1: Tensor, duration: Tensor) -> Tensor:
-    """A planar quintic from ``(x0, v0, a0 = 0)`` to rest at ``x1`` (``PelvisTrack.move``): ``(R, 6, 2)``."""
-
-    t = duration[:, None]
-    c3 = (20.0 * (x1 - x0) - 12.0 * v0 * t) / (2.0 * t**3)
-    c4 = (30.0 * (x0 - x1) + 16.0 * v0 * t) / (2.0 * t**4)
-    c5 = (12.0 * (x1 - x0) - 6.0 * v0 * t) / (2.0 * t**5)
-    return torch.stack([x0, v0, torch.zeros_like(x0), c3, c4, c5], 1)
-
-
-def _eval2(c: Tensor, s: Tensor) -> Tensor:
-    s = s[..., None]
-    c = c[:, None]
-    return c[:, :, 0] + s * (c[:, :, 1] + s * (c[:, :, 2] + s * (c[:, :, 3] + s * (c[:, :, 4] + s * c[:, :, 5]))))
-
-
-def _empty_piece(m: int, dtype: Any, device: Any) -> Piece:
-    z = torch.zeros(m, dtype=dtype, device=device)
-    q = torch.zeros((m, 4), dtype=dtype, device=device)
-    q[:, 0] = 1.0
-    return Piece(z.clone(), z.clone(), torch.zeros((m, 6, 3), dtype=dtype, device=device), torch.zeros((m, 6, 3), dtype=dtype, device=device), q)
-
-
-def _scatter_piece(target: Piece, index: Tensor, source: Piece) -> None:
-    for name in ("start", "end", "position", "rotation", "reference"):
-        getattr(target, name)[index] = getattr(source, name)
-
-
 def _shifted(base: Contact, clean: Contact, noisy: Contact) -> Contact:
     """``episode._shifted_knot``: ``base`` moved by the noise that took ``clean`` to ``noisy``."""
 
@@ -1100,12 +766,6 @@ def _blend(a: Contact, b: Contact, fraction: float) -> Contact:
         a.velocity + fraction * (b.velocity - a.velocity),
         a.angular_velocity + fraction * (b.angular_velocity - a.angular_velocity),
     )
-
-
-def unit_cross_check(a: Tensor, b: Tensor) -> Tensor:
-    """``|a x b|`` (kept for tests of the frame helpers)."""
-
-    return norm(cross(a, b))
 
 
 __all__ = ["ATTEMPT", "LET_GO", "STATUS_NAMES", "STOP", "UNREACHABLE", "Opponent", "OpponentConfig", "Plan"]

@@ -121,23 +121,6 @@ def paddle_velocity_for(
     return contact_point - relative, ok
 
 
-def outgoing_spin(params: VecParams, env: Tensor, ball_in: Tensor, v_out: Tensor, normal: Tensor) -> tuple[Tensor, Tensor]:
-    """``strike.outgoing_spin``: the spin a point-mass face along ``normal`` gives when it sends the ball off at ``v_out``."""
-
-    u, ok = paddle_velocity_for(params, env, ball_in[:, 3:6], ball_in[:, 6:9], v_out, normal)
-    impact = resolve(
-        ball_in[:, 3:6],
-        ball_in[:, 6:9],
-        unit(normal),
-        u,
-        torch.full((ball_in.shape[0],), MAT_RUBBER, dtype=torch.long, device=ball_in.device),
-        env,
-        params,
-        effective_mass=params.paddle_mass[env],
-    )
-    return impact.spin, ok
-
-
 def _spin_core(
     angles: Tensor,
     d: Tensor,
@@ -481,4 +464,4 @@ def execute(strike: Strike, radius: Tensor, sd: Tensor, generator: Any = None, p
     return command, torch.stack([dt, norm(tilt), dv, norm(dc)], -1)
 
 
-__all__ = ["ContactCommand", "Strike", "execute", "forward", "normal_for_spin", "outgoing_spin", "paddle_inertia", "paddle_velocity_for", "plan_strike"]
+__all__ = ["ContactCommand", "Strike", "execute", "forward", "normal_for_spin", "paddle_inertia", "paddle_velocity_for", "plan_strike"]

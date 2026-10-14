@@ -335,11 +335,9 @@ class Rallies(RallySim):
         # buffers (ready blade, start hand) well defined
         profile = torch.ones((n, 2), dtype=torch.long, device=dev)
         stance = stance.to(dtype)
-        state = torch.zeros((n, 9), dtype=dtype, device=dev)
-        state[:, 2] = -10.0
         super().__init__(
             opponent,
-            state,
+            _ExternalBall(active),
             t0=t0,
             end=end,
             profile=profile,
@@ -348,11 +346,9 @@ class Rallies(RallySim):
             t_hit=torch.full((n,), t0 - 1.0, dtype=dtype, device=dev),
             dt=h,
             cadence=8,
-            compile=False,
             cap_time=cap_time,
             cap_shots=cap_shots,
         )
-        self.ball = _ExternalBall(active)  # pyright: ignore[reportAttributeAccessIssue]
         self.phase[:] = OVER
         self.finished[:] = True
         self.in_rally = torch.zeros(n, dtype=torch.bool, device=dev)
@@ -413,7 +409,6 @@ class Rallies(RallySim):
         self.pelvis.coeffs[slots] = 0.0
         self.pelvis.rest[slots] = torch.cat([self.stance[rows, 0], self.stance[rows, 1]])
         self.last_contact[slots] = -float("inf")
-        self.has_stroke[slots] = False
         self.in_rally[rows] = True
         self.rally_start[rows] = now
         self.hits[rows] = 0

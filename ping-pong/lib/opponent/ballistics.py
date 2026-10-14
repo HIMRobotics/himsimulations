@@ -56,25 +56,6 @@ class Coeffs:
             params.lift_form,
         )
 
-    def _map(self, fn: Any) -> Coeffs:
-        return Coeffs(
-            fn(self.gravity),
-            fn(self.radius),
-            fn(self.gain),
-            fn(self.drag0),
-            fn(self.drag_slope),
-            fn(self.slope),
-            fn(self.c_max),
-            fn(self.decay_gain),
-            self.lift_form,
-        )
-
-    def repeat(self, k: int) -> Coeffs:
-        return self._map(lambda v: v.repeat(k))
-
-    def take(self, index: Tensor) -> Coeffs:
-        return self._map(lambda v: v[index])
-
 
 def _acceleration(v: Tensor, w: Tensor, c: tuple[Tensor, ...], lift_form: str) -> tuple[Tensor, Tensor]:
     gravity, radius, gain, drag0, drag_slope, slope, c_max, decay_gain = c
@@ -150,16 +131,6 @@ def compiled(fn: Any) -> Any:
         return fn(*args)
 
     return call
-
-
-def compile_status() -> dict[str, Any]:
-    """
-    Whether the opponent's hot bodies run compiled: ``{"enabled", "fallback", "error"}``. ``fallback`` is set once a
-    compile failed (no C compiler for Triton, for one) and every body runs eagerly from then on, with the same results;
-    record it with a run's results.
-    """
-
-    return {"enabled": bool(COMPILE), "fallback": bool(_COMPILED.get("failed", False)), "error": _COMPILED.get("error")}
 
 
 def _coeff_args(c: Coeffs) -> tuple[Tensor, ...]:
@@ -547,7 +518,6 @@ __all__ = [
     "Landing",
     "Launch",
     "Root",
-    "compile_status",
     "first_root",
     "flight_at",
     "fly",
