@@ -8,6 +8,26 @@ retargeter builds its kinematic model from its URDF (``lib/retarget/model.py``).
 
 Joint and link fields are names in the robot's USD (and its URDF, which must use the same names). Joint groups are
 regular expressions matched in full against joint names, as Isaac Lab's actuator configs take them.
+
+**What a new humanoid must provide** (each a field of :class:`RobotSpec`):
+
+1. **Its body:** ``usd`` (an articulation whose links and joints carry the URDF's names) and ``urdf`` with its
+   ``urdf_sha256``. ``prune`` lists name fragments of the prims the paddle replaces (a hand); at least one must match.
+2. **Its joints and motors:** ``joint_names``, and ``actuators`` covering every joint exactly once, each group with its
+   torque-speed envelope, rotor armature and PD gains. ``action_fraction`` sets the action scale.
+3. **Its stance:** ``default_pose`` (the action origin), ``base_height_m`` and ``stance_m`` behind the end line.
+4. **Its paddle:** ``paddle``, the wrist link it replaces the hand on and the blade centre's offset along that link's
+   ``+x``. The paddle frame is fixed to the link's axes: ``x`` along the handle to the tip, ``y`` the forehand normal,
+   ``z`` across the blade. The mass properties are the paddle's own, so they carry over unchanged.
+5. **Its links:** ``links`` (the pelvis is the articulation's root) and ``fall``, when it has fallen.
+6. **Its colliders:** ``colliders``, the URDF's collision for every link the USD leaves without one, so the whole body
+   meets the table and itself.
+7. **Optionally:** ``retarget``, for the stroke retargeter.
+
+The table scene, the template and the film then work unchanged. The table scene refuses at build time if the articulation's joints
+differ from ``joint_names``, a prune pattern matches nothing, or a collider names a missing link or one that already
+has a collider. The trained policy is the G1's alone: its inputs are this robot's ``3 J + 29`` values plus the ball
+forecast, and its outputs are its 29 joints. A new humanoid needs its own policy, which the template is the start of.
 """
 
 from __future__ import annotations

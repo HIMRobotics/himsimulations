@@ -144,8 +144,9 @@ class TemplateParams(BaseModel):
 
     :ivar robot: The humanoid.
     :ivar num_envs: Parallel worlds.
-    :ivar fixed_base: Pin the pelvis to the world.
-    :ivar balls: Balls launched at the robot, one after another.
+    :ivar fixed_base: Pin the pelvis to the world. Holding its pose with zero actions, a G1 with no balance controller
+        falls; unpin it once your controller balances.
+    :ivar balls: Balls launched in turn: ITTF's 30 cm drop onto the table, then HIM's recorded feeds at the robot.
     :ivar max_sim_s: Safety cap on simulated time.
     :ivar film: Film env 0 in the HIM lab twin at 24 fps.
     :ivar artifacts_dir: Where the run writes its reports inside the service.
@@ -155,7 +156,7 @@ class TemplateParams(BaseModel):
 
     robot: RobotName = "unitree-g1"
     num_envs: int = Field(default=4, ge=1)
-    fixed_base: bool = False
+    fixed_base: bool = True
     balls: int = Field(default=4, ge=1)
     max_sim_s: float = Field(default=20.0, gt=0.0)
     film: bool = True

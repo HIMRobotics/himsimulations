@@ -5,8 +5,13 @@ The Unitree G1 29-DoF (rev 1.0, standard 4010 wrist) with a paddle in place of i
 - **Body:** Isaac's G1 USD with the two Dex3 hands deactivated; every link collides through the URDF's collider
   (``urdf/``, Unitree's BSD-3 URDF from ``unitree_ros`` at 5994d4faef).
 - **Motors:** five motor types. Peak torque and joint speed limit come from Unitree's URDF; the torque-speed knee,
-  no-load speed and reflected rotor inertia come from Unitree's measured actuator table (``unitree_rl_lab``). The PD
-  gains are Unitree's deployed G1 gains (arm kp 40, kd 1).
+  no-load speed and reflected rotor inertia come from Unitree's measured actuator table (``unitree_rl_lab``). The
+  exception is the ankles and the waist roll and pitch, each driven by two N5020 through a linkage: they take the
+  actuator table's 50 N m and 37 rad/s, where the URDF writes 35 N m and 30 rad/s. The PD gains are Unitree's
+  deployed G1 gains (arm kp 40, kd 1).
+- **Trained on exactly this:** the policy in ``lib/policy`` was trained and graded with these motors, this default
+  pose (``v2``: the right elbow raised 0.1 rad so the paddle clears the table at every reset) and these action scales.
+  Change any of them and the policy no longer matches its robot.
 - **Actions:** a unit action asks for a quarter of the joint's peak torque through its PD (BeyondMimic's scale),
   added to the ready stance.
 - **Colliders:** the USD gives only the pelvis, torso, knees, feet and wrist-yaw links a collider; every other link gets

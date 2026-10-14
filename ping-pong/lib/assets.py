@@ -132,6 +132,8 @@ ASSETS: dict[str, Asset] = {
             name="ping-pong/him-opponent-model",
             version="v2",
             file="him-opponent-model-v2.zip",
+            sha256="a22b3b84eb12f602c2e18b9187e323d01cd11dfe2cea773d741ee01ccf574f10",
+            bytes=6696224,
             source="The HIM opponent distilled from the recorded sessions: shot-intent mixture model and rules",
         ),
         # Retargeting (lib/retarget): the human strokes in, and the reference output for the G1.
