@@ -1,0 +1,16 @@
+[project]
+name = "table-tennis-compositor"
+version = "0.1.0"
+description = "Review-clip encoder service for the table-tennis demo: one to four letterboxed panes per frame, encoded to H.264 by FFmpeg"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn>=0.35",
+  "python-multipart>=0.0.9",
+  "pydantic>=2.11,<3",
+  "pillow>=10",
+  "imageio-ffmpeg>=0.5",
+]
+
+[tool.uv]
+environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]

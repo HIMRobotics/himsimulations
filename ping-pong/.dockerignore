@@ -1,0 +1,10 @@
+# Only the files an image COPYs reach a build. The engine images (replay,
+# robot) copy nothing: their source arrives through antioch.yaml's sync
+# mappings, so editing simulation code never rebuilds an image.
+*
+!compositor
+!compositor/**
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache

@@ -1,0 +1,1708 @@
+{
+  "ball_radius": {
+    "value": 0.02005,
+    "min": 0.02,
+    "max": 0.02025,
+    "unit": "m",
+    "source_ids": [
+      "ittf_statutes_2025",
+      "ittf_t3_2018",
+      "ittf_plastic_qa_2014",
+      "tsukamoto_2025",
+      "kuneth_2020"
+    ],
+    "source": "ITTF Law 2.3.1; ITTF T3 2018 B.3; ITTF Plastic Balls Q&A 2014; Tsukamoto et al. 2025",
+    "confidence": "high",
+    "notes": "Law 2.3.1: 40 mm. T3 B.3 (non-celluloid): every ball 40.00-40.60 mm, sample mean 40.00-40.50 mm. Measured: approved plastic balls 40.02-40.40 mm (ITTF Q&A 2014); Nittaku Premium Clean 40+ 40.11 +/- 0.02 mm (Tsukamoto 2025). Nominal 40.1 mm diameter. Celluloid balls were smaller (39.50-40.50 mm). No temperature dependence of note (thermal expansion of ABS about 1e-4 /K, i.e. < 0.01 mm over 5 C)."
+  },
+  "ball_mass": {
+    "value": 0.0027,
+    "min": 0.00267,
+    "max": 0.00277,
+    "unit": "kg",
+    "source_ids": [
+      "ittf_statutes_2025",
+      "ittf_t3_2018",
+      "tsukamoto_2025"
+    ],
+    "source": "ITTF Law 2.3.2; ITTF T3 2018 B.1; Tsukamoto et al. 2025",
+    "confidence": "high",
+    "notes": "Law 2.3.2: 2.7 g. T3 B.1: any one ball 2.67-2.77 g, sample mean 2.69-2.76 g, SD <= 0.03 g. Measured Nittaku Premium Clean 40+ 2.69 +/- 0.01 g; Nittaku training ball 2.72 +/- 0.02 g (Tsukamoto 2025). Non-ITTF recreational balls can fall outside this band; the plan's mass x1.1/x1.5/x2 sweeps are negative controls, not priors."
+  },
+  "ball_shell_thickness": {
+    "value": 0.0005,
+    "min": 0.00038,
+    "max": 0.00055,
+    "unit": "m",
+    "source_ids": [
+      "remond_2022",
+      "zhang_2014_lajss",
+      "rinaldi_2019",
+      "weener_us10478678",
+      "derived_here"
+    ],
+    "source": "Remond et al. 2022 (X-ray, ABS 0.50 mm); Zhang et al. 2014 (celluloid 0.38 mm); consistent with mass/density derivation",
+    "confidence": "high",
+    "notes": "40+ ABS ball: (500 +/- 20) um measured by X-ray tomography (Cornilleau P-ball 3-star, 2.7 g, Remond 2022); the same value follows from mass 2.70 g, diameter 40.1-40.2 mm and ABS/PC density 1.07 g/cm3 (Weener patent): 0.50-0.53 mm. Celluloid shells were thinner: 0.38 mm measured (Zhang 2014, R = 19.8 mm, m = 2.67 g); 0.39 mm in a Cornilleau-authored model (Rinaldi 2019). The exact hollow-shell inertia I = (2/5) m (R^5 - a^5)/(R^3 - a^3) gives I/(mR^2) = 0.650 at 0.50 mm and 0.654 at 0.38 mm (thin-shell limit 2/3), i.e. I = 7.06e-7 kg m^2 nominal (7.0e-7 to 7.2e-7 over the mass, radius and thickness ranges)."
+  },
+  "air_density": {
+    "value": 1.19,
+    "min": 1.1,
+    "max": 1.23,
+    "unit": "kg/m^3",
+    "source_ids": [
+      "cipm_2007"
+    ],
+    "source": "Picard et al. 2008 CIPM-2007 formula, evaluated for 15-30 C, 95-103 kPa",
+    "confidence": "high",
+    "notes": "CIPM-2007 moist-air formula, evaluated here: 1.199 at 20 C, 1.190 at 22 C, 1.177 at 25 C (101.325 kPa, 50 % RH, 400 ppm CO2). Humidity 30-70 % moves it by only +/- 0.3 %. Range covers 15-30 C and 95-103 kPa (sea level to about 550 m elevation); at 1000 m it falls to about 1.07. Set it from the lab's measured temperature and barometric pressure when known. Robot papers that use 1.29 (Tebbe 2020, Abeyruwan 2022) are quoting dry air at 0 C, about 8 % too high for a lab."
+  },
+  "gravity": {
+    "value": 9.80665,
+    "min": 9.80665,
+    "max": 9.80665,
+    "unit": "m/s^2",
+    "source_ids": [
+      "codata_gn",
+      "wgs84_gravity"
+    ],
+    "source": "CODATA g_n (standard gravity, fixed); WGS84 normal gravity for the size of the surface variation",
+    "confidence": "high",
+    "notes": "FIXED at standard gravity 9.80665 m/s^2 (exact by definition; CODATA g_n); min = max, so sample() never perturbs it (changed 2026-10-06 from a 9.777-9.820 range, by orchestrator decision). Why fixed, not randomised: the HIM lab's location and elevation are unknown (open question), so there is no basis for a range or for a local value; and the full variation over Earth's surface is about +/-0.3 % (WGS84 normal gravity 9.7803 at the equator, 9.7933 at 30 deg, 9.8062 at 45 deg, 9.8192 at 60 deg, 9.8322 at the poles, minus 3.09e-6 per metre of elevation), which is negligible against the calibration's minimum detectable effects (e.g. a 0.3 % change in g moves a 0.3 s flight's fall by about 1 mm, against a pooled apex MDE of 3.2-3.6 mm and a bounce-position MDE of 0.44 cm). If the lab location becomes known, replace the value with the local WGS84 value and keep min = max."
+  },
+  "air_kinematic_viscosity": {
+    "value": 1.53e-05,
+    "min": 1.47e-05,
+    "max": 1.61e-05,
+    "unit": "m^2/s",
+    "source_ids": [
+      "ussa_1976",
+      "cipm_2007"
+    ],
+    "source": "US Std Atmosphere 1976 Eq. 51 + CIPM-2007",
+    "confidence": "high",
+    "notes": "Sutherland viscosity (US Std Atm 1976 Eq. 51) over CIPM-2007 density: 1.51e-5 at 20 C, 1.53e-5 at 22 C, 1.56e-5 at 25 C (101.325 kPa). Re = v d / nu with d = 40.1 mm: 3 m/s -> 7.9e3, 10 m/s -> 2.6e4, 20 m/s -> 5.2e4, 35 m/s -> 9.2e4. Informational: the physics contract has no Reynolds-number input."
+  },
+  "drag_coefficient": {
+    "value": 0.5,
+    "min": 0.4,
+    "max": 0.58,
+    "unit": "1",
+    "source_ids": [
+      "conti_2026",
+      "duerr_2026_ace",
+      "dambrosio_2024",
+      "ito_2025",
+      "nakashima_2014",
+      "miyazaki_2017",
+      "achenbach_1972"
+    ],
+    "source": "Sony AI 2026 (Conti et al.) Table I; D'Ambrosio et al. 2024 Table V; Ito & Kamijima 2025; Nakashima et al. 2014",
+    "confidence": "medium",
+    "notes": "Standard form F_D = 1/2 C_D rho A v^2. Measured or fitted values for a 40 mm ball: Sony AI 2026 Table I 0.47-0.55 (0.55 at 2.5 m/s, 0.47-0.49 at 7.5-17.5 m/s for low spin, with a non-monotonic spin dependence spanning 0.37-0.55), interpolating to about 0.52 at 5 m/s; the same group's simpler Nature model uses a constant 0.55 (Duerr 2026); DeepMind 2024 measured MuJoCo blunt drag 0.235 = standard 0.47; Nakashima 2014 0.44 (backspin) to 0.57 (topspin) at S about 1; LES (Ito 2025) 0.475-0.62. Constant C_D is adequate: there is no drag crisis anywhere in play (Re <= 9.3e4 at 35 m/s, versus about 3e5 for a smooth sphere). Nominal 0.50 is the Sony AI value at the 4-12 m/s speeds of amateur rallies. If a speed dependence is wanted, use 0.55 below 3 m/s falling to 0.47-0.49 by 8 m/s (Sony AI). The drop-test drag correction below uses 0.55 because the ball moves at 2.4 m/s there. Temperature enters only through rho (and weakly through Re)."
+  },
+  "drag_spin_slope": {
+    "value": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "unit": "1",
+    "source_ids": [
+      "conti_2026",
+      "nakashima_2014"
+    ],
+    "source": "Sony AI 2026 Table I; Nakashima et al. 2014 (no linear dependence supported)",
+    "confidence": "low",
+    "notes": "Kept at zero. The data do not support a linear C_D(S): Sony AI 2026 Table I shows C_D rising to about 0.55 near Sp 0.5-0.75 and falling to 0.37-0.48 near Sp 0.84-1.1 (non-monotonic); Nakashima 2014 finds a spin-direction effect (topspin 0.57, backspin 0.44) instead. Randomise drag_coefficient instead."
+  },
+  "lift_form": {
+    "value": "rational",
+    "unit": "1",
+    "source_ids": [
+      "conti_2026",
+      "derived_here"
+    ],
+    "source": "Fit to Sony AI 2026 Eq. 5 converted to C_L = (8/3) C_M S",
+    "confidence": "medium",
+    "notes": "C_L(S) = slope S / (1 + slope S / c_max), S = R |omega_perp| / |v|. Chosen because it is linear at small S and saturates, which is what every TT data set shows. Not 'linear' with a large cap: a constant Magnus coefficient (C_L proportional to S) cannot fit both ends. With the small-S slope (about 1.0) it over-predicts lift 2-4x at S >= 0.6; with Nakashima's value fitted near S = 1 (C_L/S about 0.25) it under-predicts 3-4x at S = 0.2-0.3."
+  },
+  "lift_slope": {
+    "value": 1.2,
+    "min": 0.9,
+    "max": 1.6,
+    "unit": "1",
+    "source_ids": [
+      "conti_2026",
+      "duerr_2026_ace",
+      "nakashima_2014",
+      "ito_2025",
+      "tebbe_2020",
+      "dambrosio_2024",
+      "derived_here"
+    ],
+    "source": "Fit to Sony AI 2026 (Conti et al.) Eq. 5; cross-checked against Duerr et al. 2026, Nakashima 2014 and Ito & Kamijima 2025",
+    "confidence": "medium",
+    "notes": "dC_L/dS at S -> 0. Fitted here (with lift_max) to the Sony AI 2026 C_M(v, omega) model converted to standard C_L = (8/3) C_M S, over v = 7.5-17 m/s and S = 0.05-1.2: the Sony curve gives C_L 0.09 / 0.16 / 0.21 / 0.23-0.27 / 0.24-0.29 / 0.23-0.30 at S = 0.1 / 0.2 / 0.3 / 0.4 / 0.5 / 0.6 (spread over speed) and the fit gives 0.09 / 0.15 / 0.19 / 0.22 / 0.24 / 0.26; at S = 0.8 / 1.0 / 1.2 Sony gives 0.16-0.28 / 0.23-0.29 / 0.28-0.34 and the fit 0.28 / 0.30 / 0.31 (rms error 0.037 over S <= 1.2). Initial slope in the Sony data is 0.95-1.0; slope 1.2 with c_max 0.40 minimises error across S <= 1.2. Watch the convention: Japanese papers, Sony AI and MuJoCo use F = C_M rho V (omega x v) with V the ball volume, so C_L = (8/3) C_M S; Tebbe 2020 uses F = 1/2 C_M rho A r (omega x v), so C_L = C_M S. MuJoCo's default C_M = 1 (used unmeasured by DeepMind 2024) is C_L = 2.67 S, 2-3x too strong. The same Sony group's Nature model uses c_M = 0.1/S - 0.001, i.e. an almost constant C_L = 0.267 - 0.0027 S (Duerr 2026): equivalent to lift_form constant with c_max 0.27, which agrees with this fit for S = 0.4-1.2 but not at small S."
+  },
+  "lift_max": {
+    "value": 0.4,
+    "min": 0.28,
+    "max": 0.5,
+    "unit": "1",
+    "source_ids": [
+      "conti_2026",
+      "nakashima_2014",
+      "ito_2025",
+      "miyazaki_2017",
+      "derived_here"
+    ],
+    "source": "Fit to Sony AI 2026; Nakashima et al. 2014; Ito & Kamijima 2025; Miyazaki et al. 2017 (abstract)",
+    "confidence": "medium",
+    "notes": "Saturation of the rational C_L(S). Evidence for C_L at moderate to high spin: Sony AI 2026 0.16-0.30 at S = 0.6-1.0 (with a dip near S = 0.8 at v >= 10.5 m/s); Nakashima 2014 0.18-0.32 at S about 1; LES (Ito 2025) 0.07-0.42 over S = 0.09-4.5. Miyazaki 2017 (abstract) reports a 'lift crisis' where C_L almost vanishes at Re = 9e4 and S = 0.48-0.50: this regime (fast, moderately spun balls) is not captured by any smooth form and is listed as not pinned down. Randomise slope and c_max together."
+  },
+  "spin_decay_coefficient": {
+    "value": 0.02,
+    "min": 0.007,
+    "max": 0.055,
+    "unit": "1",
+    "source_ids": [
+      "ito_2025",
+      "ito_2022",
+      "kamijima_2014",
+      "conti_2026",
+      "nakashima_2014",
+      "derived_here"
+    ],
+    "source": "Ito & Kamijima 2025 (LES, converted); Kamijima et al. 2014 (measured, post-bounce); conflict unresolved",
+    "confidence": "low",
+    "notes": "Contract form: tau = -C_tau (1/2) rho A R^2 |v| omega, so the decay rate is lambda = C_tau rho A R^2 |v| / (2 I) and the loss per metre travelled is C_tau rho A R^2 / (2 I), about 0.43 C_tau per metre. Converting Ito & Kamijima 2025 LES torque coefficients (C_tau = 2 C_m / S) gives C_tau = 0.008-0.032 for v = 5-20 m/s and S = 0.1-1.5 (higher at low speed and high spin), i.e. lambda about 0.03-0.11 /s. The only measurement found (Kamijima 2014, robot-launched topspin, post-bounce arcs) implies 1.6-2.4 % per metre, i.e. C_tau = 0.037-0.056, 2-4x the CFD value. Nominal 0.02 (8 % per second at 10 m/s, about 3-5 % over one flight); range covers both. Sony AI 2026 and Nakashima 2014 hold spin constant in flight. Not identifiable from the HIM data (no spin observations)."
+  },
+  "stat_ball_speed_rally_elite": {
+    "value": 10.4,
+    "min": 5.1,
+    "max": 19.3,
+    "unit": "m/s",
+    "source_ids": [
+      "duerr_2026_ace",
+      "etaat_2025",
+      "xie_2002"
+    ],
+    "source": "Duerr et al. 2026 data (analysed here); Etaat et al. 2025",
+    "confidence": "high",
+    "notes": "Speed just after the racket, all rally shots, 5 elite humans: median 10.4, p5-p95 5.1-19.3, max 23.3 m/s; 2 professionals: median 11.4, p5-p95 5.3-21.1, max 27.9. Broadcast reconstruction of pros (LATTE-MV): mean 11.25, 80 % within 5.36-18.27. value = median, min/max = p5/p95. Analysis of the public Sony Ace match data (Duerr et al. 2026) by this work; humans play a robot, so rally context is human-vs-robot."
+  },
+  "stat_ball_speed_rally_amateur": {
+    "value": 8.0,
+    "min": 4.0,
+    "max": 15.0,
+    "unit": "m/s",
+    "source_ids": [
+      "abeyruwan_2022",
+      "belli_2019",
+      "tian_2024"
+    ],
+    "source": "Judgement anchored on Abeyruwan et al. 2022, Belli et al. 2019, Tian & Xiao 2024",
+    "confidence": "low",
+    "notes": "JUDGEMENT, no direct measurement of amateur human-vs-human rally speeds was found. Anchors: cooperative rallies of 5 non-professional players (i-Sim2Real App. C.3) have |v| along the table 2.2-8.8 m/s; offensive strokes against a robot 12.5-12.7 m/s for regional players and local novices alike (Belli 2019); national grade-one forehand topspin 9.8-11.0 m/s (Tian 2024). Expect median 6-10, p90 <= 15, max about 20 m/s."
+  },
+  "stat_ball_speed_serve_elite": {
+    "value": 7.25,
+    "min": 5.5,
+    "max": 9.4,
+    "unit": "m/s",
+    "source_ids": [
+      "duerr_2026_ace"
+    ],
+    "source": "Duerr et al. 2026 data (analysed here)",
+    "confidence": "high",
+    "notes": "Serves, speed off the racket: 7.25 +/- 1.34 m/s, p5-p95 5.5-9.4, max 10.0 (elite and pro). Short serves are slower (about 4.8-5.0 m/s off the racket for one world champion, Wang 2008, low-medium confidence). Amateur serves: 3-8 m/s (judgement). Analysis of the public Sony Ace match data (Duerr et al. 2026) by this work; humans play a robot, so rally context is human-vs-robot."
+  },
+  "stat_ball_speed_smash_elite": {
+    "value": 24.0,
+    "min": 21.7,
+    "max": 27.9,
+    "unit": "m/s",
+    "source_ids": [
+      "xie_2002",
+      "duerr_2026_ace"
+    ],
+    "source": "Xie et al. 2002; Duerr et al. 2026 data",
+    "confidence": "medium",
+    "notes": "Forehand smash 21.7-27.4 m/s (ranges of player means, Singapore national team, Xie 2002); fastest professional shot in the Ace data 27.9 m/s. A popular-press 'fastest smash 116 km/h (32 m/s)' could not be verified. Upper bound for paddle-tunnelling tests: closing speed up to about 45 m/s once racket speed is added."
+  },
+  "stat_spin_rally_elite": {
+    "value": 54.0,
+    "min": 10.0,
+    "max": 120.0,
+    "unit": "rev/s",
+    "source_ids": [
+      "duerr_2026_ace",
+      "xie_2002",
+      "kidokoro_2025",
+      "tian_2024"
+    ],
+    "source": "Duerr et al. 2026 data; Xie et al. 2002; Kidokoro et al.; Tian & Xiao 2024",
+    "confidence": "high",
+    "notes": "All rally shots after the racket: elite median 54 rps (p90 109, max 144); pro median 43 rps (p90 121, max 152). Deliberate topspin loops in lab drills are 100-140 rps (Xie 2002 drive loop 110-137, high loop 103-147; Kidokoro 117 +/- 29; Tian 2024 103-111). The gap is shot mix (blocks, pushes, counters). 1 rps = 6.283 rad/s. min is a soft lower bound for attacking shots, not a measured p5. Analysis of the public Sony Ace match data (Duerr et al. 2026) by this work; humans play a robot, so rally context is human-vs-robot."
+  },
+  "stat_spin_serve_elite": {
+    "value": 40.0,
+    "min": 14.0,
+    "max": 63.0,
+    "unit": "rev/s",
+    "source_ids": [
+      "yoshida_2014",
+      "duerr_2026_ace",
+      "lee_xie_2004"
+    ],
+    "source": "Yoshida 2014; Duerr et al. 2026 data; Lee & Xie 2004",
+    "confidence": "high",
+    "notes": "2009 World Championships quarter-finalists: 329 serves at 1000 fps, 13.7-62.5 rps, men 46.0 +/- 9.0, women 39.2 +/- 9.3 (Yoshida 2014, abstract). Ace data: 35 +/- 13 rps, p5-p95 15-56, max 74. Singapore elite: backspin about 48, side-spin 47-55, long sidespin 68-69 rps; spin falls 13-44 % over two bounces (Lee & Xie 2004)."
+  },
+  "stat_spin_amateur": {
+    "value": 25.0,
+    "min": 5.0,
+    "max": 110.0,
+    "unit": "rev/s",
+    "source_ids": [
+      "no_source"
+    ],
+    "source": "No source: judgement",
+    "confidence": "low",
+    "notes": "JUDGEMENT: casual rally balls 5-30 rps, deliberate amateur loops 50-110 rps, amateur serves 15-45 rps. No peer-reviewed amateur spin distribution was found; a commercial claim that half of amateur loops fail to reach 100 rps was not used. The HIM data cannot observe spin (no spin measurement, 11 Hz IMU, saturated gyro)."
+  },
+  "stat_inter_hit_interval_elite": {
+    "value": 0.61,
+    "min": 0.34,
+    "max": 0.91,
+    "unit": "s",
+    "source_ids": [
+      "duerr_2026_ace",
+      "etaat_2025"
+    ],
+    "source": "Duerr et al. 2026 data; Etaat et al. 2025",
+    "confidence": "high",
+    "notes": "Time between alternating hits: median 0.61 s, p5-p95 0.34-0.91 (Ace data); pro broadcast mean 0.56 s (LATTE-MV). Hit to first bounce median 0.33 s (p5-p95 0.17-0.57); bounce to next hit median 0.235 s (0.10-0.40). Analysis of the public Sony Ace match data (Duerr et al. 2026) by this work; humans play a robot, so rally context is human-vs-robot."
+  },
+  "stat_inter_hit_interval_amateur": {
+    "value": 0.9,
+    "min": 0.6,
+    "max": 1.3,
+    "unit": "s",
+    "source_ids": [
+      "no_source"
+    ],
+    "source": "No source: judgement",
+    "confidence": "low",
+    "notes": "JUDGEMENT: slower balls and higher arcs than elite play. Japanese pro-league per-player shot intervals of 0.79 s (warm-up) and 1.01 s (matches) are cited second-hand by Mukai et al. 2026 (arXiv:2606.26643) from Yoshida et al. 1991, not opened. Compare against the HIM camera data directly; this prior is weak."
+  },
+  "stat_bounce_depth_from_net_elite": {
+    "value": 0.92,
+    "min": 0.55,
+    "max": 1.27,
+    "unit": "m",
+    "source_ids": [
+      "duerr_2026_ace",
+      "picabea_2023"
+    ],
+    "source": "Duerr et al. 2026 data; Picabea et al. 2023",
+    "confidence": "high",
+    "notes": "Rally shots land a median 0.92 m from the net (about 0.45 m from the end line), p5-p95 0.55-1.27 m; serves' second bounce median 0.79 m from the net. Sub-elite league play (Picabea 2023, 7,505 strokes incl. serves): 47 % in the far third, 30 % middle, 8 % near third, 14 % misses (equal thirds assumed). Amateur play is broader and shallower (judgement). Analysis of the public Sony Ace match data (Duerr et al. 2026) by this work; humans play a robot, so rally context is human-vs-robot."
+  },
+  "stat_net_clearance_rally_elite": {
+    "value": 0.082,
+    "min": 0.01,
+    "max": 0.198,
+    "unit": "m",
+    "source_ids": [
+      "duerr_2026_ace",
+      "rahmanian_2026",
+      "derived_here"
+    ],
+    "source": "Derived from Duerr et al. 2026 data with its flight model; Rahmanian et al. 2026",
+    "confidence": "medium",
+    "notes": "DERIVED: ball-centre height above the net top, from a two-point flight fit (hit position to measured bounce position and time, with the Ace flight model incl. Magnus). Rally median 8.2 cm, IQR 4.2-12.9, p90 19.8 cm (min here is a soft floor, not a p5). Without Magnus the median drops to 3.9 cm, so this depends on the lift prior. TT4D: 'typically crosses between 5-15 cm above the net'. Serves: median 2.9 cm, IQR 1.6-4.8 cm. Amateur: median 10-25 cm (judgement)."
+  },
+  "stat_apex_height_rally_elite": {
+    "value": 0.32,
+    "min": 0.2,
+    "max": 0.5,
+    "unit": "m",
+    "source_ids": [
+      "duerr_2026_ace",
+      "derived_here"
+    ],
+    "source": "Derived from Duerr et al. 2026 data",
+    "confidence": "medium",
+    "notes": "DERIVED from the same flight fit: highest ball-centre point between hit and bounce, rally shots median 0.32 m above the table, serves 0.21 m. Range is judgement (amateur arcs 0.3-0.5 m)."
+  },
+  "stat_shots_per_rally_elite": {
+    "value": 4.0,
+    "min": 1.0,
+    "max": 38.0,
+    "unit": "1",
+    "source_ids": [
+      "leite_2017",
+      "duerr_2026_ace",
+      "picabea_2023"
+    ],
+    "source": "Leite et al. 2017; Picabea et al. 2023; Duerr et al. 2026 data",
+    "confidence": "high",
+    "notes": "World-class men (21 matches): median 4 shots, IQR 3-6, range 1-38 (Leite 2017). Sub-elite league: about 4.2 strokes per rally (derived from Picabea 2023 counts). Ace data (vs robot): mean 5.3 (elite), 4.5 (pro); 30-43 % of rallies have <= 3 shots; a net contact occurs in about 13 % of rallies. No recreational-play source; expect median 3-5."
+  },
+  "stat_rally_duration_elite": {
+    "value": 3.3,
+    "min": 2.7,
+    "max": 4.4,
+    "unit": "s",
+    "source_ids": [
+      "leite_2017",
+      "pradas_2021",
+      "zagatto_2010"
+    ],
+    "source": "Leite et al. 2017; Pradas et al. 2021; Zagatto et al. 2010",
+    "confidence": "high",
+    "notes": "World-class men: median 3.3 s, IQR 2.7-4.4, range 1.1-31.2 (Leite 2017; 3.6 s at the 2009 Worlds, 3.1 s at the 2012 Olympics). Elite Spanish simulated matches 3.6 +/- 0.3 s (men), 4.3 +/- 1.07 s (women) (Pradas 2021). Brazilian regional/national 3.4 +/- 1.7 s (Zagatto 2010). Rest between rallies: 18.6 s (world-class), 8-14 s (national/regional). Values differ with era and whether the toss is counted."
+  },
+  "table_length": {
+    "value": 2.74,
+    "min": 2.735,
+    "max": 2.745,
+    "unit": "m",
+    "source_ids": [
+      "ittf_statutes_2025",
+      "ittf_t1_2016"
+    ],
+    "source": "ITTF Law 2.1.1; ITTF T1 2016 s4.4",
+    "confidence": "high",
+    "notes": "Law 2.1.1: 2.74 m. T1 4.4: within 5 mm (the gap between halves may reach 20 mm on two-piece tables). The HIM lab table is measured from the ArUco tags; a recreational table need not meet ITTF tolerances."
+  },
+  "table_width": {
+    "value": 1.525,
+    "min": 1.522,
+    "max": 1.528,
+    "unit": "m",
+    "source_ids": [
+      "ittf_statutes_2025",
+      "ittf_t1_2016"
+    ],
+    "source": "ITTF Law 2.1.1; ITTF T1 2016 s4.4",
+    "confidence": "high",
+    "notes": "Law 2.1.1: 1.525 m. T1 4.4: within 3 mm. White side and end lines 20 mm wide (Law 2.1.4), centre line 3 mm."
+  },
+  "table_height": {
+    "value": 0.76,
+    "min": 0.757,
+    "max": 0.763,
+    "unit": "m",
+    "source_ids": [
+      "ittf_statutes_2025",
+      "ittf_t1_2016"
+    ],
+    "source": "ITTF Law 2.1.1; ITTF T1 2016 s4.4",
+    "confidence": "high",
+    "notes": "Law 2.1.1: playing surface 76 cm above the floor. T1 4.4: within 3 mm. Flatness: diagonal warp <= 3.0 mm (T1 4.6). Board thickness typically 18-30 mm (T1 4.6)."
+  },
+  "net_height": {
+    "value": 0.1525,
+    "min": 0.148,
+    "max": 0.157,
+    "unit": "m",
+    "source_ids": [
+      "ittf_statutes_2025",
+      "ittf_t2_2015"
+    ],
+    "source": "ITTF Law 2.2.3; ITTF T2 2015",
+    "confidence": "high",
+    "notes": "Law 2.2.3: top of the net 15.25 cm above the playing surface along its whole length. T2 criterion 5: posts adjustable to 152.5 +/- 4.5 mm; T2 tension check: a 100 g gauge at mid-span depresses the top by just under 10 mm. Recreational nets are often lower or sag more; measure from the tags."
+  },
+  "net_overhang": {
+    "value": 0.1525,
+    "min": 0.1505,
+    "max": 0.1545,
+    "unit": "m",
+    "source_ids": [
+      "ittf_statutes_2025",
+      "ittf_t2_2015"
+    ],
+    "source": "ITTF Law 2.2.2; ITTF T2 2015",
+    "confidence": "high",
+    "notes": "Law 2.2.2: outside limits of the posts 15.25 cm outside the side line, so the net spans 1.83 m. T2 criterion 6: 152.5 +/- 2 mm. Posts are 152.5 +/- 3 mm high and fit in a 22 mm square."
+  },
+  "net_thickness": {
+    "value": 0.003,
+    "min": 0.002,
+    "max": 0.006,
+    "unit": "m",
+    "source_ids": [
+      "no_source",
+      "ittf_t2_2015"
+    ],
+    "source": "No source: judgement (ITTF T2 gives mesh and tape, not thickness)",
+    "confidence": "low",
+    "notes": "Collision thickness of the net plane. ITTF specifies the tape height (<= 15 mm) and mesh size (7.5-12.5 mm squares, spun fibre) but not the thickness; 2-6 mm is a guess for mesh plus cord. Only matters for tunnelling at high speed."
+  },
+  "net_cord_tension": {
+    "value": 45.0,
+    "min": 30.0,
+    "max": 60.0,
+    "unit": "N",
+    "source_ids": [
+      "ittf_t2_2015",
+      "derived_here"
+    ],
+    "source": "Derived from the ITTF T2 100 g tension gauge",
+    "confidence": "low",
+    "notes": "DERIVED: the T2 tension check hangs a 100 g gauge (0.98 N) at mid-span and expects the net top to sag from 152.5 mm to just above 142.5 mm, i.e. a sag of just under 10 mm. For a cord of span 1.83 m with a central point load, T = F L / (4 sag) = 45 N at 10 mm sag; equivalently a mid-span vertical stiffness of about 100 N/m. Informational: the physics contract models the net as a rigid box."
+  },
+  "paddle_blade_half_length": {
+    "value": 0.0785,
+    "min": 0.075,
+    "max": 0.08,
+    "unit": "m",
+    "source_ids": [
+      "butterfly_tb_alc",
+      "butterfly_korbel",
+      "ittf_statutes_2025"
+    ],
+    "source": "Butterfly blade specs (Timo Boll ALC, Petr Korbel); ITTF Law 2.4.1",
+    "confidence": "medium",
+    "notes": "Blade head 157 x 150 mm (Butterfly Timo Boll ALC) and 158 x 152 mm (Butterfly Petr Korbel), both manufacturer specs; ITTF sets no size limit (Law 2.4.1). The HIM paddles are unknown red recreational rackets; heads of 150-160 mm long are typical. Handle about 100 mm."
+  },
+  "paddle_blade_half_width": {
+    "value": 0.075,
+    "min": 0.0725,
+    "max": 0.077,
+    "unit": "m",
+    "source_ids": [
+      "butterfly_tb_alc",
+      "butterfly_korbel"
+    ],
+    "source": "Butterfly blade specs (Timo Boll ALC, Petr Korbel)",
+    "confidence": "medium",
+    "notes": "Half of the 150-152 mm head width from the same manufacturer specs."
+  },
+  "paddle_thickness": {
+    "value": 0.0136,
+    "min": 0.011,
+    "max": 0.0146,
+    "unit": "m",
+    "source_ids": [
+      "ittf_statutes_2025",
+      "ittf_t4_2017",
+      "butterfly_tb_alc",
+      "butterfly_korbel",
+      "butterfly_tenergy05"
+    ],
+    "source": "ITTF Law 2.4.3 and T4 2017; Butterfly blade and rubber specs",
+    "confidence": "medium",
+    "notes": "Blade 5.7-5.9 mm (manufacturer specs; 5.0-6.6 mm across common blades) plus two inverted rubbers, each < 4.05 mm including adhesive (Law 2.4.3; T4: 4.0 mm). A 2.1 mm sponge plus top sheet is about 3.8-4.0 mm; recreational rubbers with 1.5-1.8 mm sponge about 3.3-3.6 mm. Nominal 5.8 + 2 x 3.9 mm."
+  },
+  "paddle_mass": {
+    "value": 0.175,
+    "min": 0.15,
+    "max": 0.2,
+    "unit": "kg",
+    "source_ids": [
+      "butterfly_tb_alc",
+      "butterfly_korbel",
+      "no_source"
+    ],
+    "source": "Butterfly blade specs; rubber cut weights community-measured (not peer reviewed)",
+    "confidence": "medium",
+    "notes": "Blade 80-95 g (Timo Boll ALC ~86 g, Korbel ~91 g, manufacturer) plus two cut inverted rubbers of about 40-55 g each (no manufacturer publishes cut weights; community-measured values for Tenergy 05 / Rakza 7 at 2.0-2.1 mm are 46-51 g, not peer reviewed) plus glue: 150-200 g. Informational: the contract uses paddle_effective_mass instead."
+  },
+  "table_restitution": {
+    "value": 0.94,
+    "min": 0.92,
+    "max": 0.955,
+    "unit": "1",
+    "source_ids": [
+      "conti_2026",
+      "inaba_2017",
+      "gossard_2026_serve",
+      "nakashima_2010",
+      "ittf_statutes_2025",
+      "ittf_t1_2016",
+      "derived_here",
+      "calibration_2026"
+    ],
+    "source": "Sony AI 2026; Inaba et al. 2017; Gossard et al. 2026; Nakashima et al. 2010; ITTF Law 2.1.3 and T1 4.9 (drag-corrected here); nominal 0.94 and range per HIM calibration 2026-10-06 s14 (runs ad447e14, 45c179b9)",
+    "confidence": "high",
+    "notes": "Constant normal COR for the contract, evaluated at the normal impact speeds that dominate play: incoming |v_n| at the table is mostly 2-4 m/s (Ace data: post-bounce v_z median 2.1, p95 3.1 m/s). Measured speed dependence, three independent fits on 40+ balls: Sony AI e = 0.98 - 0.020 |v_n| (0.934 at 2.3 m/s, 0.90 at 4, 0.82 at 8); Inaba 2017 plastic e = 1.000 - 0.0209 |v_n| (0.95 at 2.4, 0.79 at 10); Gossard serve fit plateau 0.94 below 4.8 m/s, 0.85 at 8. Nakashima 2010 measured 0.93 (drops, international table). ITTF Law 2.1.3 '23 cm from 30 cm' gives 0.876 if air drag is ignored, but 0.912 with drag (C_D 0.55, rho 1.19) at the 2.37 m/s impact speed; the T1 approval band 230-260 mm is 0.91-0.97 drag-corrected. Do not use 0.876 in a simulator that models drag: it would bounce the ITTF test to only about 21.3 cm, below the 23 cm minimum. See table_restitution_vs_speed for the curve. RANGE NARROWED 2026-10-06 from 0.86-0.96 to 0.90-0.955 (nominal unchanged) at the calibration agent's request. With the speed curve on, the loader scales the curve by value/0.92, so the old range double-counted speed variation, and its ends fell outside the ITTF T1 230-260 mm drop band, which with the curve on (C_D 0.50, rho 1.19, impact 2.38 m/s) allows 0.896-0.955 (checked here). Calibration evidence (reports/calibration.md s5, s8): sensitivity run adc07a2f41f94762b5970baba5466b81 (suite 21df5277bf52441e8abdd77e0272ab15); Section D predictive run dbe48673efdb4f9f98fd5ddc35aabd3a (calibration suite v5 92bf4569fce74a079ce89968aee0b1bb); leave-one-session-out curve-scale fits on the HIM bounces (derived/calibration/agreement/table_estimates.json, sha256 9eb8782830642d3f...): free-velocity fit 1.002 +/- 0.002 (e 0.921, n 1050), impact-law fit 1.026 +/- 0.003 (e 0.944, n 839); both lie inside the new range. Calibration keeps the nominal at 0.92 because the two observation products disagree (see that report). NOMINAL MOVED 2026-10-06 (evening) from 0.92 to 0.94 and range narrowed from 0.90-0.955 to 0.92-0.955, on calibration's recommendation (reports/calibration.md s14.6) after ball-track's depth-bias reconciliation. Contract units: scalar x means the cited speed curve (Sony AI shape, tabulated for 0.92) times x/0.92; table_restitution_vs_speed now stores that curve already multiplied by 0.94/0.92, because params.py scales the stored curve by value/nominal. Evidence on the reconciled data, all in contract units: impact-law LOSO 0.942 (folds 0.940-0.944, curve scale 1.0241 +/- 0.0015); free-velocity LOSO 0.930 raw, 0.949 spin-corrected; engine post-bounce vz from the contact start 0.920 raw, about 0.94 after the -0.02 zero-spin fit bias; engine apex 0.937 (pre start) and about 0.946 (contact start). Ball-track's apparent 0.962 at about 2.5 m/s is 0.942-0.952 in contract units. The engine's restitution bias is flat across impact speed (-0.005 to +0.001 over 0.5-6 m/s), so the cited curve shape is kept, not the data's steeper slope. ITTF drop (C_D 0.50, rho 1.19, impact 2.38 m/s, checked here): 0.92 -> 242 mm, 0.94 -> 252 mm, 0.955 -> 260 mm, all inside 230-260 mm; 0.955 is the legal upper bound. 0.90-0.92 is excluded by every spin-aware estimate by more than 2.5 MDE (contact-start restitution MDE 0.0072). Runs: Section D after reconciliation ad447e14b2be4e8097f80f8f80e4a596 (before: c1699f3fa7a645ac9c0d7a19a53a3971); sensitivity v6 45c179b953924f018b2fd8485ab1dcfa (suite 0a0c7ffb3f984624838120d1eb8c5e0b); calibration v6 suite f2724dd89a4b44de819626cf28a0bdaf (C1 00942f69c5a540638cda74445e049907, C7 f31711aad10a4ee6bb1ffe7510b90b72)."
+  },
+  "table_restitution_vs_speed": {
+    "value": null,
+    "unit": "1",
+    "source_ids": [
+      "conti_2026",
+      "inaba_2017",
+      "gossard_2026_serve"
+    ],
+    "source": "Sony AI 2026 Eq. table e_n(v); cross-checked with Inaba 2017 and Gossard 2026",
+    "confidence": "high",
+    "notes": "Normal COR against normal approach speed (m/s), piecewise linear, constant beyond the end points: e = clip(0.98 - 0.020 |v_n|, 0.60, 0.95) from Sony AI 2026; the cap at 0.95 follows the Gossard plateau (0.94) and the rigid-glass value at 1 m/s (Remond 2022). Inaba 2017 lies about 0.015 higher and Gossard about 0.01-0.03 higher above 5 m/s. params.py reads this key and scales the curve by table_restitution / 0.92, so randomising the scalar moves the whole curve (updated 2026-10-06). The HIM bounces fall with speed about twice as steeply (LOSO slope -0.038 to -0.044 per m/s; reports/calibration.md s8), not yet adopted because the observation products disagree. UPDATED 2026-10-06 (evening): 'values' are the cited curve multiplied by 0.94/0.92 = 1.021739, so that the new nominal table_restitution 0.94 reproduces the calibrated curve (params.py scales the stored values by table_restitution / nominal). The literature curve itself is kept in 'cited_values' (tabulated for scalar 0.92); the shape is unchanged.",
+    "speed_unit": "m/s",
+    "speeds": [
+      0.5,
+      1.5,
+      2.0,
+      3.0,
+      4.0,
+      5.0,
+      6.0,
+      8.0,
+      10.0,
+      12.0
+    ],
+    "values": [
+      0.970652,
+      0.970652,
+      0.960435,
+      0.94,
+      0.919565,
+      0.89913,
+      0.878696,
+      0.837826,
+      0.796957,
+      0.756087
+    ],
+    "cited_values": [
+      0.95,
+      0.95,
+      0.94,
+      0.92,
+      0.9,
+      0.88,
+      0.86,
+      0.82,
+      0.78,
+      0.74
+    ],
+    "cited_reference": 0.92
+  },
+  "table_friction": {
+    "value": 0.25,
+    "min": 0.15,
+    "max": 0.4,
+    "unit": "1",
+    "source_ids": [
+      "nakashima_2010",
+      "conti_2026",
+      "duerr_2026_ace",
+      "inaba_2017",
+      "remond_2023",
+      "ittf_t1_2016"
+    ],
+    "source": "Nakashima et al. 2010; Sony AI 2026; Inaba et al. 2017; Remond et al. 2023",
+    "confidence": "high",
+    "notes": "Coulomb friction between ball and table. Measured 0.25 (Nakashima 2010, onset of sliding) and validated as a model parameter over about 25,000 table contacts (Sony AI 2026; Duerr 2026). Inaba 2017 apparent impact friction for plastic balls 0.27-0.42 rising with contact-point speed (20-155 km/h), celluloid 0.20-0.43. ABS on glass 0.22 (Remond 2023). ITTF T1 advisory: <= 0.6 (sled test). Rejected: 0.05 from a quasi-static tilt test (Gao 2021) and engine-specific values (PyBullet 0.33, MuJoCo 0.1). Plastic balls grip more than celluloid at low slip speed."
+  },
+  "table_rolling_resistance": {
+    "value": 0.005,
+    "min": 0.002,
+    "max": 0.015,
+    "unit": "1",
+    "source_ids": [
+      "no_source",
+      "cross_2015_low_bounce",
+      "cross_2016_rolling"
+    ],
+    "source": "No source: judgement (bracketed by Cross 2015, 2016)",
+    "confidence": "low",
+    "notes": "JUDGEMENT. Contract convention: C_rr = F_rr / N, the centre force that would keep the ball rolling at constant speed (equivalently a resisting couple C_rr N R), so a freely rolling ball decelerates at C_rr g / (1 + k), about 0.6 C_rr g. No measured rolling resistance for a table-tennis ball was found. Hard balls on hard, smooth surfaces roll with coefficients well below 0.001, and high-bounce (low-hysteresis) balls roll more easily than low-bounce ones (Cross 2015, 2016); a 0.4-0.5 mm plastic shell deforms more than a solid ball, and a concrete floor adds roughness (Cross 2015, surface roughness). Air drag on a 1 m/s rolling ball (about 0.09 m/s^2) is comparable. Painted table board: smoother and stiffer than the floor, 0.005 (0.002-0.015)."
+  },
+  "table_tangential_restitution": {
+    "value": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "unit": "1",
+    "source_ids": [
+      "nakashima_2010",
+      "conti_2026",
+      "remond_2023",
+      "remond_2024"
+    ],
+    "source": "Nakashima et al. 2010 model; Sony AI 2026; Remond et al. 2023",
+    "confidence": "medium",
+    "notes": "Zero: the table is a rigid Coulomb contact. The Nakashima point-contact model used by Sony AI has alpha = min(2/5, mu (1 + e) |v_z| / |v_T|) with kappa = m R^2 / I = 3/2, so a sticking contact leaves the ball rolling (tangential COR 0) and the table never reverses spin. Remond 2023 confirms rolling without sliding for ABS on a rigid surface below about 46 deg incidence. Spin about the table normal: Sony AI keeps it unchanged; a loss of roughly 5.5 |v_n| rad/s is estimated from Remond 2024 (low confidence) and is not in the contract."
+  },
+  "rubber_restitution": {
+    "value": 0.72,
+    "min": 0.58,
+    "max": 0.86,
+    "unit": "1",
+    "source_ids": [
+      "conti_2026",
+      "gossard_2026_rubber",
+      "nakashima_2010",
+      "rinaldi_2019",
+      "dambrosio_2023"
+    ],
+    "source": "Sony AI 2026; Gossard et al. 2026 (rubbers); Nakashima et al. 2010; Rinaldi et al. 2019",
+    "confidence": "medium",
+    "notes": "Constant normal COR of an inverted (pips-in) rubber on sponge, evaluated at about 8 m/s relative normal speed (typical amateur strokes). It falls linearly with speed in both large data sets: Sony AI 2026 (Dignics 05 2.1 mm) e = 0.878 - 0.020 |v_n| (0.84 at 2, 0.78 at 5, 0.68 at 10, 0.58 at 15 m/s); Gossard 2026 offensive rubbers e = 0.89-0.91 - 0.021 |v_n|, allround rubbers 0.81-0.86 - 0.017 |v_n|, stiffer blades higher. Nakashima 2010: 0.81 (slow, clamped racket). Rinaldi 2019: about 0.70 at 14 m/s on a rigid backing. Both data sets are apparent CORs of robot-held rackets, so they already include blade and mounting losses. Not validated above about 15 m/s relative speed (data stop at 12-15 m/s). PyBullet's 0.44 'best transfer' value (D'Ambrosio 2023) is an artefact of a rigid simulated paddle and is not a physical prior. See rubber_restitution_vs_speed."
+  },
+  "rubber_restitution_vs_speed": {
+    "value": null,
+    "unit": "1",
+    "source_ids": [
+      "conti_2026",
+      "gossard_2026_rubber"
+    ],
+    "source": "Sony AI 2026; Gossard et al. 2026",
+    "confidence": "medium",
+    "notes": "Normal COR of offensive inverted rubber against relative normal approach speed (m/s): e = 0.885 - 0.0205 |v_n| (mean of Sony AI and Gossard offensive rubbers), held constant beyond 15 m/s because no data exist above that. Allround/recreational rubbers sit about 0.05 lower.",
+    "speed_unit": "m/s",
+    "speeds": [
+      1.0,
+      2.0,
+      4.0,
+      6.0,
+      8.0,
+      10.0,
+      12.0,
+      15.0
+    ],
+    "values": [
+      0.86,
+      0.84,
+      0.8,
+      0.76,
+      0.72,
+      0.68,
+      0.64,
+      0.58
+    ]
+  },
+  "rubber_friction": {
+    "value": 1.0,
+    "min": 0.6,
+    "max": 1.5,
+    "unit": "1",
+    "source_ids": [
+      "no_source",
+      "ittf_t4_2017",
+      "remond_2025",
+      "dambrosio_2023"
+    ],
+    "source": "No direct source; ITTF T4 (pimples-out >= 0.5); indirect values only",
+    "confidence": "low",
+    "notes": "No peer-reviewed impact friction for inverted rubber against a 40+ ball was opened (Varenberg & Varenberg 2012, Tribol. Lett. 47:51, is paywalled and unverified). Indirect values: silicone analogue 0.92 (Remond 2025); engine parameters 1.0-1.5 (Gao 2021 tilt test 1.0, PyBullet 1.09, MuJoCo 1.5); ITTF requires only >= 0.50 for pimples-out rubber. In the compliant (tangential-restitution) model the friction acts as a cap and matters only at grazing incidence or with very high slip."
+  },
+  "rubber_tangential_restitution": {
+    "value": 0.7,
+    "min": 0.5,
+    "max": 0.85,
+    "unit": "1",
+    "source_ids": [
+      "conti_2026",
+      "nakashima_2010",
+      "gossard_2026_rubber"
+    ],
+    "source": "Sony AI 2026; Nakashima et al. 2010; Gossard et al. 2026 (k_p converted)",
+    "confidence": "medium",
+    "notes": "Contact-point tangential COR (the slip velocity reverses to -e_t times itself), which is how a grippy rubber returns spin. Sony AI 2026: e_t = 0.819 - 0.010 |v_T| (0.72 at 10 m/s slip). Nakashima 2010 k_p = 1.9e-3 kg and Gossard 2026 k_p about 0.0019 kg (slightly falling with slip speed) convert to e_t = 2.5 k_p / m - 1 = 0.76 at low slip, 0.53 at 14 m/s. If ball mass is randomised, a constant k_p (a rubber property) makes e_t fall with mass while a constant e_t does not; choose deliberately. Sony AI also damps spin about the racket normal by 0.805 (rubber_normal_spin_retention), which the contract does not model."
+  },
+  "rubber_normal_spin_retention": {
+    "value": 0.805,
+    "min": 0.7,
+    "max": 0.95,
+    "unit": "1",
+    "source_ids": [
+      "conti_2026"
+    ],
+    "source": "Sony AI 2026",
+    "confidence": "medium",
+    "notes": "Informational (no contract field): fraction of spin about the racket-face normal kept through a racket impact (Sony AI 2026, e_s). Range is judgement."
+  },
+  "paddle_effective_mass": {
+    "value": 0.17,
+    "min": 0.1,
+    "max": 0.4,
+    "unit": "kg",
+    "source_ids": [
+      "no_source",
+      "cross_racquet_power",
+      "butterfly_tb_alc",
+      "butterfly_korbel"
+    ],
+    "source": "No measurement; paddle mass from manufacturer specs; sensitivity via Cross apparent-COR formula",
+    "confidence": "low",
+    "notes": "No table-tennis measurement of racket-plus-hand effective mass was found. Nominal is the paddle mass (impact near the centre of mass, hand coupling neglected because contact lasts only 0.6-0.8 ms). An off-centre impact lowers it (rotation about the CoM; about 0.12 kg for 5 cm offset, estimated), a firm grip raises it. Sensitivity is small because the ball is 1.6 % of the paddle: with intrinsic e = 0.80, the apparent COR e_A = (e M - m)/(M + m) is 0.753 at 0.10 kg, 0.772 at 0.17 kg, 0.788 at 0.40 kg (Cross). The Sony/Gossard rubber CORs were measured on robot-held rackets, so with a kinematic (infinite-mass) paddle use them as they are; with a free paddle of this mass, expect the rebound about 0.02-0.03 lower."
+  },
+  "net_restitution": {
+    "value": 0.2,
+    "min": 0.05,
+    "max": 0.45,
+    "unit": "1",
+    "source_ids": [
+      "no_source",
+      "ittf_t2_2015"
+    ],
+    "source": "No source: judgement (ITTF T2 describes the mechanism only)",
+    "confidence": "low",
+    "notes": "POORLY CHARACTERISED: no measurement of ball-net impacts was found. The mesh is loose and hangs from a tight cord (T2), so a ball hitting the mesh loses most of its normal speed, while a ball striking the taped cord can deflect strongly and, with topspin, climb over (T2 describes this). A single rigid-box COR cannot represent both. Values are judgement."
+  },
+  "net_friction": {
+    "value": 0.3,
+    "min": 0.1,
+    "max": 0.6,
+    "unit": "1",
+    "source_ids": [
+      "no_source"
+    ],
+    "source": "No source: judgement",
+    "confidence": "low",
+    "notes": "POORLY CHARACTERISED: no measurement. Judgement for a fabric tape and mesh against an ABS ball."
+  },
+  "post_restitution": {
+    "value": 0.946,
+    "min": 0.921,
+    "max": 0.97,
+    "unit": "1",
+    "source_ids": [
+      "ittf_t3_2018",
+      "tsukamoto_2025",
+      "derived_here"
+    ],
+    "source": "ITTF T3 2018 B.7 steel-block bounce (drag-corrected here with the reference flight model); Tsukamoto et al. 2025",
+    "confidence": "medium",
+    "notes": "Ball against the steel net posts. ITTF T3 B.7 drops a non-celluloid ball from 305 mm onto an S235 steel block and requires a 240-265 mm rebound (240-260 mm for celluloid). Ignoring drag that is e = 0.887-0.932; inverted through lib.physics restitution_from_drop_test at the cited C_D 0.50 and rho 1.19 it is 0.921-0.970, and the mid-band 252.5 mm ball is 0.946 (0.938-0.952 across the C_D range 0.40-0.58). Tsukamoto 2025 measured 0.920 (naive) for a premium 40+ ball. A 15 mm post is not a 20 mm block and may flex, so this is an upper bound for the post; no ball-post measurement exists."
+  },
+  "post_friction": {
+    "value": 0.2,
+    "min": 0.1,
+    "max": 0.35,
+    "unit": "1",
+    "source_ids": [
+      "no_source"
+    ],
+    "source": "No source: judgement",
+    "confidence": "low",
+    "notes": "JUDGEMENT: ABS ball on a painted or polished steel post. No ball-steel friction measurement was found."
+  },
+  "floor_restitution": {
+    "value": 0.88,
+    "min": 0.75,
+    "max": 0.94,
+    "unit": "1",
+    "source_ids": [
+      "remond_2022",
+      "ittf_t3_2018",
+      "tsukamoto_2025",
+      "zhang_2014_lajss",
+      "derived_here"
+    ],
+    "source": "Remond et al. 2022 (ABS on glass); ITTF T3 steel-block test; Zhang et al. 2014 (celluloid on marble)",
+    "confidence": "medium",
+    "notes": "No measurement on a concrete floor was found; the prior uses the ball's own COR on rigid targets, because a concrete slab is effectively rigid for a 2.7 g ball. ABS ball on glass: about 0.95 at 1 m/s, 0.92 near 5 m/s, then shell buckling above (5.5 +/- 0.5) m/s and 0.83 at 8, 0.78 at 10 m/s (Remond 2022). ITTF steel-block test at 2.4 m/s: 240-265 mm from 305 mm = 0.92-0.97 drag-corrected; Nittaku Premium 40+ measured 0.920 (naive, no drag correction; Tsukamoto 2025). Celluloid on marble (Zhang 2014): 0.85-0.90 at 4-5 m/s, 0.74 at 10 m/s. Floor impacts are mostly 3-7 m/s; nominal 0.88 allows a little loss for a painted or coated slab. See floor_restitution_vs_speed."
+  },
+  "floor_restitution_vs_speed": {
+    "value": null,
+    "unit": "1",
+    "source_ids": [
+      "remond_2022",
+      "zhang_2014_lajss"
+    ],
+    "source": "Remond et al. 2022 Fig. 6a",
+    "confidence": "medium",
+    "notes": "Rigid-target COR of an ABS ball against normal approach speed (m/s), read from Remond 2022 Fig. 6a; buckling onset 5.5 +/- 0.5 m/s. Use for the floor (and as the ball's intrinsic COR); a coated floor will be somewhat lower.",
+    "speed_unit": "m/s",
+    "speeds": [
+      1.0,
+      3.0,
+      5.0,
+      6.0,
+      8.0,
+      10.0,
+      12.0
+    ],
+    "values": [
+      0.95,
+      0.93,
+      0.92,
+      0.89,
+      0.83,
+      0.78,
+      0.76
+    ]
+  },
+  "floor_friction": {
+    "value": 0.35,
+    "min": 0.2,
+    "max": 0.6,
+    "unit": "1",
+    "source_ids": [
+      "no_source",
+      "remond_2023"
+    ],
+    "source": "No source for concrete; Remond et al. 2023 for ABS on glass",
+    "confidence": "low",
+    "notes": "No measurement for a ball on concrete. ABS on smooth glass is 0.22 (Remond 2023); a rougher concrete or painted floor is likely higher. Judgement."
+  },
+  "floor_rolling_resistance": {
+    "value": 0.01,
+    "min": 0.003,
+    "max": 0.03,
+    "unit": "1",
+    "source_ids": [
+      "no_source",
+      "cross_2015_low_bounce",
+      "cross_2016_rolling",
+      "cross_2015_roughness"
+    ],
+    "source": "No source: judgement (bracketed by Cross 2015, 2016)",
+    "confidence": "low",
+    "notes": "JUDGEMENT. Contract convention: C_rr = F_rr / N, the centre force that would keep the ball rolling at constant speed (equivalently a resisting couple C_rr N R), so a freely rolling ball decelerates at C_rr g / (1 + k), about 0.6 C_rr g. No measured rolling resistance for a table-tennis ball was found. Hard balls on hard, smooth surfaces roll with coefficients well below 0.001, and high-bounce (low-hysteresis) balls roll more easily than low-bounce ones (Cross 2015, 2016); a 0.4-0.5 mm plastic shell deforms more than a solid ball, and a concrete floor adds roughness (Cross 2015, surface roughness). Air drag on a 1 m/s rolling ball (about 0.09 m/s^2) is comparable. Concrete: 0.010 (0.003-0.030); with drag, a ball rolling at 1 m/s stops in about 5 m."
+  },
+  "wall_restitution": {
+    "value": 0.8,
+    "min": 0.7,
+    "max": 0.9,
+    "unit": "1",
+    "source_ids": [
+      "remond_2022",
+      "no_source"
+    ],
+    "source": "No source: judgement, below the rigid-target bound of Remond et al. 2022",
+    "confidence": "low",
+    "notes": "JUDGEMENT (game-fixes WALL_CONTACT). Ball against the lab's walls, ceiling and solid furniture. No measurement of a table-tennis ball on a painted wall was found. The ball's own rigid-target restitution is about 0.95 at 1 m/s and 0.92 near 5 m/s on glass (Remond et al. 2022); a painted partition on studs and thin sheet-metal cabinets flex and dissipate more, so 0.80 with a plausible range 0.70-0.90."
+  },
+  "wall_friction": {
+    "value": 0.35,
+    "min": 0.2,
+    "max": 0.5,
+    "unit": "1",
+    "source_ids": [
+      "no_source",
+      "remond_2023"
+    ],
+    "source": "No source: judgement",
+    "confidence": "low",
+    "notes": "JUDGEMENT (game-fixes WALL_CONTACT): a painted or coated surface, as the floor prior; ABS on smooth glass is 0.22 (Remond et al. 2023)."
+  },
+  "ball_contact_time": {
+    "value": 0.0006,
+    "min": 0.0005,
+    "max": 0.001,
+    "unit": "s",
+    "source_ids": [
+      "remond_2022",
+      "zhang_2014_lajss",
+      "remond_2025"
+    ],
+    "source": "Remond et al. 2022; Zhang et al. 2014; Remond et al. 2025",
+    "confidence": "high",
+    "notes": "Informational: impact duration on rigid targets 0.5-0.7 ms (0.6 ms typical; Remond 2022, Zhang 2014 Table 1 0.50-0.67 ms below 15 m/s), rising to 0.8-1.0 ms near 30 m/s or on compliant layers (Remond 2025 about 0.8 ms). Shorter than a 1 ms physics step: use an impulse or event contact model, or substep contacts."
+  },
+  "ball_buckling_speed": {
+    "value": 5.5,
+    "min": 5.0,
+    "max": 7.5,
+    "unit": "m/s",
+    "source_ids": [
+      "remond_2022",
+      "remond_2023",
+      "zhang_2014_lajss",
+      "cross_2014"
+    ],
+    "source": "Remond et al. 2022, 2023",
+    "confidence": "high",
+    "notes": "Informational: normal impact speed above which the shell buckles on a rigid target and the COR falls faster: (5.5 +/- 0.5) m/s for ABS at normal incidence (Remond 2022), (7.5 +/- 0.5) m/s in the oblique study (Remond 2023). Celluloid buckled permanently above about 31-35 m/s (Zhang 2014)."
+  },
+  "ball_steel_block_restitution": {
+    "value": 0.94,
+    "min": 0.92,
+    "max": 0.97,
+    "unit": "1",
+    "source_ids": [
+      "ittf_t3_2018",
+      "ittf_t3_2014",
+      "tsukamoto_2025",
+      "lu_2024",
+      "schneider_2022",
+      "inaba_2017",
+      "derived_here"
+    ],
+    "source": "ITTF T3 2018 B.7 (drag-corrected here); Tsukamoto et al. 2025; Lu et al. 2024; Inaba et al. 2017",
+    "confidence": "high",
+    "notes": "Informational: the ball's own COR in the ITTF ball test (305 mm drop onto steel, impact at 2.40 m/s). The 240-265 mm band for 40+ balls is 0.887-0.932 if drag is ignored and 0.925-0.974 with drag (C_D 0.55, rho 1.19); a mid-band 250 mm ball is 0.945. Tsukamoto 2025 measured 0.920 +/- 0.002 for Nittaku Premium Clean 40+ (naive) and 0.880 for a Nittaku training ball. Plastic balls bounce higher on steel and are harder than celluloid (Lu 2024, nine ball types); seamless higher than seamed. Celluloid and plastic CORs are similar at low speed, but celluloid drops faster above about 20 km/h normal speed (Inaba 2017, via Schneider 2022). The 2014 leaflet allowed 237-265 mm for non-celluloid balls until 2016."
+  },
+  "stat_racket_speed_topspin_elite": {
+    "value": 13.0,
+    "min": 11.6,
+    "max": 14.6,
+    "unit": "m/s",
+    "source_ids": [
+      "bankosz_2018"
+    ],
+    "source": "Bankosz & Winiarski 2018",
+    "confidence": "high",
+    "notes": "Racket (not ball) speed at contact in forehand and backhand topspin, elite junior women (Bankosz & Winiarski 2018, Table 1). Useful for paddle-impact tests: closing speed = racket speed + incoming ball speed."
+  },
+  "adaptation_latency_s": {
+    "value": 0.11,
+    "min": 0.095,
+    "max": 0.16,
+    "unit": "s",
+    "source_ids": [
+      "brenner_smeets_1997",
+      "brenner_smeets_2015",
+      "brenner_2026",
+      "oostwoud_wijdenes_2011",
+      "brenner_2023",
+      "bootsma_1990",
+      "bootsma_2010",
+      "le_runigo_2005"
+    ],
+    "source": "Lab interception latencies 96-121 ms; table-tennis estimate 105-156 ms (Bootsma & van Wieringen 1990)",
+    "confidence": "medium",
+    "notes": "Visuomotor latency from a change in where the ball will be to the first change in hand/paddle path. Lab interception and hitting tasks: about 110 ms (Brenner & Smeets 1997), 116 ms lateral / 109 ms vertical (2015), 114 ms (2026, N = 22), 96-121 ms (Oostwoud Wijdenes 2011), 'a bit more than 100 ms' (Brenner 2023), independent of when in the movement the change occurs. Top table-tennis players: 'last moment of control' 105-156 ms before contact (mean 121 +/- 21; Bootsma & van Wieringen 1990, indirect method). Upper bound 160 ms covers tennis experts' 162 ms for a speed change (Le Runigo 2005, abstract). Untrained lab participants already reach 100-120 ms, so expertise is not needed for position-type corrections. Anything that changes in the last ~0.1 s before contact is not corrected at all. Player adaptation prior (added 2026-10-06): a human-capability limit, not a physics parameter; see docs/physics-priors.md 'Player adaptation priors'."
+  },
+  "adaptation_latency_timing_s": {
+    "value": 0.17,
+    "min": 0.16,
+    "max": 0.22,
+    "unit": "s",
+    "source_ids": [
+      "brenner_smeets_2015",
+      "le_runigo_2005",
+      "brenner_1998",
+      "mcleod_1987"
+    ],
+    "source": "Brenner & Smeets 2015 (169 ms); Le Runigo et al. 2005 (162 / 221 ms); Brenner et al. 1998 (~200 ms)",
+    "confidence": "medium",
+    "notes": "Latency when the ball's speed or arrival time changes, so that WHEN the paddle arrives must change: 169 ms (Brenner & Smeets 2015, vs 116 ms for a position change), about 200 ms for a target-velocity change (Brenner 1998), 162 ms tennis experts vs 221 ms non-experts (Le Runigo 2005, abstract), cricketers 'around 200 ms' to unpredictable bounces (McLeod 1987, abstract). Timing corrections are slower than position corrections; this is the latency to use for adaptation_time_shift_max_s. Player adaptation prior (added 2026-10-06): a human-capability limit, not a physics parameter; see docs/physics-priors.md 'Player adaptation priors'."
+  },
+  "adaptation_time_shift_max_s": {
+    "value": 0.02,
+    "min": 0.01,
+    "max": 0.04,
+    "unit": "s",
+    "source_ids": [
+      "bootsma_1990",
+      "bootsma_2010",
+      "brenner_smeets_2015",
+      "brenner_2026",
+      "van_soest_2010",
+      "rodrigues_2000"
+    ],
+    "source": "Derived from Bootsma & van Wieringen 1990 movement-time variability (SD 4.8-20.9 ms); no direct measurement",
+    "confidence": "low",
+    "notes": "LATE timing correction (decided after forward-swing onset, i.e. in the final ~150-200 ms): largest change in contact time a player can make to an already-launched stroke. No study measures this directly. Anchors: top players' movement duration varies with SD 11.7 +/- 7.7 ms (4.8-20.9 ms per player) to absorb initiation-time variability of SD 17.4 ms (Bootsma & van Wieringen 1990; Bootsma 2010), so +/-2 SD gives about +/-23 ms (10-42 ms); timing corrections need about 170 ms (adaptation_latency_timing_s), longer than a 92-178 ms table-tennis drive, which is why only 2 of 5 top players showed within-stroke adaptation and lower-level players showed none (van Soest 2010, abstract); a 1 cm lab target jump produced an 8.4 ms timing shift (Brenner 2026). Larger re-timing needs a decision before the swing: see adaptation_time_shift_preswing_max_s. Coupling: in a drive the bat's direction of travel turns at 680-930 deg/s near contact (B&W 1990 Table 2), so each ms of shift changes the path direction by about 0.7-0.9 deg unless compensated. Player adaptation prior (added 2026-10-06): a human-capability limit, not a physics parameter; see docs/physics-priors.md 'Player adaptation priors'."
+  },
+  "adaptation_time_shift_preswing_max_s": {
+    "value": 0.06,
+    "min": 0.04,
+    "max": 0.1,
+    "unit": "s",
+    "source_ids": [
+      "rodrigues_2000",
+      "le_runigo_2005",
+      "marinovic_2008_2009"
+    ],
+    "source": "Rodrigues 2000 thesis (stroke delayed 52-60 ms after a cue 327 ms before contact); range is judgement",
+    "confidence": "low",
+    "notes": "Timing shift a player can build into a stroke when the change is known BEFORE forward-swing onset (at least ~200-350 ms before contact). Measured anchor: with a target cue only 327 ms before contact, club players delayed forward-swing onset from 605 to 665 ms and contact from 766 to 818.5 ms after launch (about 52-60 ms), with swing duration unchanged (157.6 ms) but accuracy falling from 47.6 % to 30.3 % (Rodrigues 2000). Brief strokes are triggered about 150 ms before onset and their amplitude can be changed only if cued more than ~200 ms before onset (Marinovic 2008/2009, abstracts). With 400 ms notice, tennis experts absorbed most of a large arrival-time change in a slower lab task (residual errors -29 / +69 ms; Le Runigo 2005), so the upper bound is uncertain. Player adaptation prior (added 2026-10-06): a human-capability limit, not a physics parameter; see docs/physics-priors.md 'Player adaptation priors'."
+  },
+  "adaptation_offset_max_m": {
+    "value": 0.02,
+    "min": 0.005,
+    "max": 0.05,
+    "unit": "m",
+    "source_ids": [
+      "brenner_2023",
+      "brenner_smeets_1997",
+      "oostwoud_wijdenes_2011",
+      "bootsma_1990",
+      "bootsma_2010",
+      "derived_here"
+    ],
+    "source": "Derived from lab correction dynamics (Brenner et al. 1997, 2011, 2023); no table-tennis measurement",
+    "confidence": "low",
+    "notes": "LATE paddle-position correction (change seen in the final ~150-200 ms): no table-tennis study measures it. Lab interception: mm-scale changes are fully corrected only if they occur >= 200 ms before contact, partially at 150-100 ms, not at all within 100 ms (Brenner 2023); 2-4 cm corrections take place mostly 100-300 ms after the change (Brenner & Smeets 1997); 2 cm jumps with 0.17-0.45 s remaining are 87-100 % corrected (Oostwoud Wijdenes 2011). Simple model (derived here, not a published fit): no correction before adaptation_latency_s, then a minimum-jerk shift over T = t_remaining - latency limited by adaptation_correction_accel_max_mps2 and adaptation_correction_speed_max_mps: D_max = min(a T^2 / 5.77, v T / 1.875). With the nominals (0.11 s, 10 m/s^2, 0.4 m/s): 0 cm at <= 110 ms, 0.3 cm at 150 ms, 1.4 cm at 200 ms, 3.0 cm at 250 ms, 4.1 cm at 300 ms remaining. Nominal 2 cm corresponds to a change seen at about forward-swing onset (~200-220 ms before contact). For comparison, top players' contact location varies stroke to stroke with SD 4.9 cm (2.7-8.0), absorbed by controlling the bat's direction rather than its position (B&W 1990), and lower-level players' with SD 9-11 cm (Bootsma 2010). Lab finger/rod tasks are slower than table-tennis arms, so the true ceiling could be higher; the evidence that table-tennis drives are corrected online at all is contested (van Soest 2010). Player adaptation prior (added 2026-10-06): a human-capability limit, not a physics parameter; see docs/physics-priors.md 'Player adaptation priors'."
+  },
+  "adaptation_offset_preswing_max_m": {
+    "value": 0.1,
+    "min": 0.05,
+    "max": 0.2,
+    "unit": "m",
+    "source_ids": [
+      "bootsma_1990",
+      "bootsma_2010",
+      "marinovic_2008_2009",
+      "no_source"
+    ],
+    "source": "Judgement anchored on expert contact-location variability (SD 4.9 cm, Bootsma & van Wieringen 1990)",
+    "confidence": "low",
+    "notes": "Paddle-position change a player can plan into a stroke when the ball's path is known before forward-swing onset (arm only, no footwork). No direct measurement: anchored on top players' routine stroke-to-stroke contact-location spread (SD 4.9 cm, so +/-2 SD about 10 cm; lower-level players SD 9-11 cm) and on amplitude being re-programmable only if cued more than ~200 ms before onset (Marinovic). Larger offsets need footwork, which recorded motion does not provide. Judgement. Player adaptation prior (added 2026-10-06): a human-capability limit, not a physics parameter; see docs/physics-priors.md 'Player adaptation priors'."
+  },
+  "adaptation_rotation_max_deg": {
+    "value": 3.0,
+    "min": 1.0,
+    "max": 8.0,
+    "unit": "deg",
+    "source_ids": [
+      "van_mierlo_2009",
+      "voudouris_2013",
+      "bootsma_1990",
+      "sheppard_li_2007",
+      "iino_kojima_2009",
+      "no_source"
+    ],
+    "source": "No racket-angle correction study exists; judgement from orientation-correction proxies and bat-direction variability",
+    "confidence": "low",
+    "notes": "LATE paddle face-angle correction (final ~150-200 ms): NOT MEASURED in any racket sport we could find. Proxies: hand-orientation corrections start 115-130 ms (grasping a rotating object, Voudouris 2013) to 150-210 ms (placing on a re-slanted surface, van Mierlo 2009) after the change and proceed at roughly 30-45 deg/s per direction in those slow tasks, i.e. about 1.5-4.5 deg in the 50-100 ms left after the latency; top players' bat direction at contact varies with SD 2.6 deg (1.4-4.4; B&W 1990), and bat direction and orientation 'showed reducing variability in the approach to contact' (Sheppard & Li 2007, abstract). Players do set the face angle according to spin (Iino & Kojima 2009) but that is planned before the swing and its size is unverified. Judgement: 3 deg nominal, 1-8 deg. Player adaptation prior (added 2026-10-06): a human-capability limit, not a physics parameter; see docs/physics-priors.md 'Player adaptation priors'."
+  },
+  "adaptation_orientation_latency_s": {
+    "value": 0.15,
+    "min": 0.115,
+    "max": 0.21,
+    "unit": "s",
+    "source_ids": [
+      "voudouris_2013",
+      "van_mierlo_2009"
+    ],
+    "source": "Voudouris et al. 2013 (115-130 ms); van Mierlo et al. 2009 (150-210 ms)",
+    "confidence": "medium",
+    "notes": "Latency of hand/implement ORIENTATION corrections: 115 ms (cube) and 130 ms (ball) for grip orientation following a 12 deg object rotation (Voudouris 2013); 0.15-0.21 s for hand orientation after a +/-10 deg surface-slant change (van Mierlo 2009; binocular cues about 40 ms slower than monocular). No racket data. Player adaptation prior (added 2026-10-06): a human-capability limit, not a physics parameter; see docs/physics-priors.md 'Player adaptation priors'."
+  },
+  "adaptation_correction_accel_max_mps2": {
+    "value": 10.0,
+    "min": 5.0,
+    "max": 20.0,
+    "unit": "m/s^2",
+    "source_ids": [
+      "brenner_smeets_1997",
+      "oostwoud_wijdenes_2011",
+      "brenner_2022",
+      "brenner_2023"
+    ],
+    "source": "Lab correction accelerations (Brenner & Smeets 1997; Oostwoud Wijdenes 2011; Brenner 2022)",
+    "confidence": "low",
+    "notes": "Peak lateral acceleration of an online correction, one direction: 5-10 m/s^2 for 2-4 cm rod corrections (Brenner & Smeets 1997, Fig. 5, individual traces up to ~15); the difference between opposite 2 cm jumps peaked at ~5 m/s^2 with 0.45 s left and 25-30 m/s^2 with 0.2 s left, i.e. roughly half per direction (Oostwoud Wijdenes 2011); 4-10 m/s^2 for 2.6 cm jumps (Brenner 2022). The gain flattens for larger steps, 'a mechanical constraint on how vigorously the hand can respond' (Brenner 2023). Finger and rod tasks, not table-tennis strokes, whose total racket accelerations reach 180-280 m/s^2 (Iino & Kojima). Player adaptation prior (added 2026-10-06): a human-capability limit, not a physics parameter; see docs/physics-priors.md 'Player adaptation priors'."
+  },
+  "adaptation_correction_speed_max_mps": {
+    "value": 0.4,
+    "min": 0.2,
+    "max": 0.6,
+    "unit": "m/s",
+    "source_ids": [
+      "brenner_smeets_1997",
+      "brenner_2023",
+      "brenner_smeets_2015",
+      "derived_here"
+    ],
+    "source": "Weakly pinned: Brenner & Smeets 1997 Fig. 4 and minimum-jerk relation",
+    "confidence": "low",
+    "notes": "Peak lateral velocity of an online correction: about 0.4-0.5 m/s in rod hitting (Brenner & Smeets 1997, Fig. 4, includes baseline lateral motion); velocity-difference responses of 10-18 cm/s for 3.3 mm steps (Brenner 2023) and ~15 cm/s for +/-1 cm jumps (Brenner & Smeets 2015). Weakly pinned; use with adaptation_correction_accel_max_mps2 in the minimum-jerk model of adaptation_offset_max_m. Player adaptation prior (added 2026-10-06): a human-capability limit, not a physics parameter; see docs/physics-priors.md 'Player adaptation priors'."
+  },
+  "adaptation_timing_sd_s": {
+    "value": 0.003,
+    "min": 0.002,
+    "max": 0.005,
+    "unit": "s",
+    "source_ids": [
+      "bootsma_1990",
+      "bootsma_2010",
+      "brenner_smeets_2015",
+      "brenner_smeets_2014"
+    ],
+    "source": "Bootsma & van Wieringen 1990 Table 2 (2.03-4.72 ms); Brenner & Smeets 2014/2015",
+    "confidence": "medium",
+    "notes": "Temporal precision of contact (SD) for top table-tennis players: 2.03-4.72 ms per player, mean 3.1 +/- 1.2 ms ('as precise as 2-5 ms'), derived as SD(bat direction)/rate of change of direction, not measured directly; much smaller than the SD at movement onset (17.4 +/- 7.9 ms). Non-experts hitting falling balls: about 5-7 ms (Brenner & Smeets 2014, 2015); 12.5-23 ms under constraints. The theoretical requirement for a 55 cm target at 2.5 m is <= 6.5 ms (B&W 1990, p. 23). Useful as a sanity floor: the controller's achieved timing error need not be better than this. Player adaptation prior (added 2026-10-06): a human-capability limit, not a physics parameter; see docs/physics-priors.md 'Player adaptation priors'."
+  },
+  "adaptation_direction_sd_deg": {
+    "value": 2.6,
+    "min": 1.4,
+    "max": 4.4,
+    "unit": "deg",
+    "source_ids": [
+      "bootsma_1990",
+      "bootsma_2010"
+    ],
+    "source": "Bootsma & van Wieringen 1990 Table 2; Bootsma et al. 2010 Table 1",
+    "confidence": "medium",
+    "notes": "Stroke-to-stroke SD of the bat's direction of travel at contact (transverse plane) for top players: 0.024-0.076 rad = 1.4-4.4 deg per player, mean 2.6 deg; lower-level players 0.056-0.080 rad = 3.2-4.6 deg (van Soest 2010 data via Bootsma 2010). Required to hit a 55 cm target at 2.5 m: <= 5.2 deg (B&W p. 23). Face-angle SD at impact for table tennis is in Iino et al. 2017 (Hum Mov Sci 56: 98-108), paywalled and unverified; tennis players show about 2.3 deg (1.5-3.9) face-angle variation (Kwon et al. 2017, JSSM 16: 505). Player adaptation prior (added 2026-10-06): a human-capability limit, not a physics parameter; see docs/physics-priors.md 'Player adaptation priors'."
+  },
+  "adaptation_contact_position_sd_m": {
+    "value": 0.049,
+    "min": 0.027,
+    "max": 0.08,
+    "unit": "m",
+    "source_ids": [
+      "bootsma_1990",
+      "bootsma_2010"
+    ],
+    "source": "Bootsma & van Wieringen 1990 Table 1; Bootsma et al. 2010 Table 1",
+    "confidence": "medium",
+    "notes": "Stroke-to-stroke SD of the bat's contact location (distance from the table's leading edge) for top players: 2.7-8.0 cm per player, mean 4.9 cm (125 fps film; the authors note lower spatial resolution at high bat speed); lower-level players 9-11 cm. 'It is not the location of the bat at the moment of ball/bat contact that is essential ... but rather the direction of travel of the bat at that moment' (B&W 1990, p. 24). Player adaptation prior (added 2026-10-06): a human-capability limit, not a physics parameter; see docs/physics-priors.md 'Player adaptation priors'."
+  },
+  "adaptation_footwork_latency_s": {
+    "value": 0.3,
+    "min": 0.22,
+    "max": 0.45,
+    "unit": "s",
+    "source_ids": [
+      "fujimoto_2021",
+      "fujii_2015",
+      "wakatsuki_2020",
+      "vuong_2022",
+      "zemkova_2014",
+      "yoshida_1991",
+      "navia_2021",
+      "mecheri_2019",
+      "triolet_2013",
+      "hulsdunker_2019",
+      "hulsdunker_2017",
+      "fujii_2013",
+      "castellar_2019",
+      "filipcic_2017"
+    ],
+    "source": "Lab choice-reaction sidesteps 0.23-0.30 s (trained athletes) plus a recreational margin; elite on-court 0.14-0.18 s with anticipation",
+    "confidence": "low",
+    "notes": "Time from when the ball's new lateral destination becomes knowable (the 'warning') to the pelvis starting to move. Measured anchors: trained athletes reacting to a light, step initiation (force onset) 0.23-0.25 s (Fujimoto 2021) and trunk initiation ~0.30 s (Fujii 2015); reaction time in maximal lateral starts 0.244-0.255 s (Vuong 2022); stimulus to foot contact in a 4-choice step 306 ms for table-tennis athletes, 362 ms for tennis (Zemkova 2014); whole-body reaction (jump to light) 0.32-0.38 s for top Japanese table-tennis players (cited by Yoshida 1991). With a live opponent whose body is informative, elites move earlier: tennis return trunk onset 177 ms (Navia 2021), first foot movement 266 ms (seniors) / 311 ms (juniors) (Mecheri 2019), reaction/anticipation boundary 140-160 ms (Triolet 2013, abstract). Visuomotor reaction of non-athletes is ~30-60 ms slower than of athletes in hand tasks (Hulsdunker 2017/2019); recreational nominal 0.30 s, range 0.22 (fast, anticipating) to 0.45 s. Related: national-level table-tennis players took 0.67 +/- 0.13 s from a light to leaving a contact mat, which includes the push-off, not movement onset (Castellar 2019); tennis split-steps land ~0.31 s after the opponent's contact (Filipcic 2017). This is the parameter with the largest effect and the least direct evidence. Footwork adaptation prior (added 2026-10-07) for a RECREATIONAL player: a human-capability limit, not a physics parameter. No study measures recreational table-tennis footwork directly; recreational values are extrapolated from trained-athlete lab data, elite table-tennis match data and badminton/tennis analogues. See docs/physics-priors.md 'Footwork adaptation'."
+  },
+  "adaptation_footwork_speed_max_mps": {
+    "value": 1.8,
+    "min": 1.2,
+    "max": 2.5,
+    "unit": "m/s",
+    "source_ids": [
+      "wakatsuki_2020",
+      "fujii_2015",
+      "valldecabres_2018",
+      "kuntze_2010",
+      "yoshida_1991"
+    ],
+    "source": "Peak lateral trunk speed 2.45-2.55 m/s in ~1 m athlete sidesteps (Wakatsuki 2020; Fujii 2015), lowered for recreational players",
+    "confidence": "low",
+    "notes": "Peak lateral pelvis speed for moves of up to ~1.5 m. Trained young men sidestepping ~1.06 m: peak lateral velocity 2.45 +/- 0.29 m/s (reactive), reached 427 ms after force onset (Wakatsuki 2020); ~2.45 m/s (Fujii 2015). Recreational badminton approach 2.1-2.2 m/s and national-level 2.65-2.74 m/s, but over >= 1.4 m (Valldecabres 2018; Kuntze 2010). An Olympic table-tennis champion's hips averaged 0.99-1.18 m/s over whole rallies (a path average including pauses, Yoshida 1991). Elite maximal lateral starts reach 3-4 m/s only beyond ~1 m. Recreational nominal 1.8 m/s (1.2-2.5); for the sub-metre moves of table tennis the cap rarely binds (see adaptation_footwork_displacement_max_m). Footwork adaptation prior (added 2026-10-07) for a RECREATIONAL player: a human-capability limit, not a physics parameter. No study measures recreational table-tennis footwork directly; recreational values are extrapolated from trained-athlete lab data, elite table-tennis match data and badminton/tennis analogues. See docs/physics-priors.md 'Footwork adaptation'."
+  },
+  "adaptation_footwork_accel_max_mps2": {
+    "value": 4.0,
+    "min": 2.5,
+    "max": 7.0,
+    "unit": "m/s^2",
+    "source_ids": [
+      "palazzi_2013",
+      "wakatsuki_2020",
+      "leidersdorf_2022",
+      "hsueh_2016",
+      "fujii_2015",
+      "zhou_2021"
+    ],
+    "source": "Effective (mean-to-peak-speed) lateral acceleration; table-tennis lateral forces 0.32-0.46 body weight in play",
+    "confidence": "low",
+    "notes": "EFFECTIVE constant lateral acceleration for the displacement model (mean from movement onset to peak speed), not the instantaneous peak. Table-tennis footwork in play produces lateral ground reaction forces of only 0.32-0.42 body weight (youth academy, heavily filtered; Palazzi 2013) to 0.38-0.46 BW (chasse vs cross-step, national level; Zhou 2021, abstract only), i.e. roughly 3-4.5 m/s^2. Maximal efforts by athletes reach about 1.0 body weight of lateral push-off (731 N at 74 kg, Wakatsuki 2020; 0.85-1.2 BW badminton, Hsueh 2016; 8.9-9.5 N/kg single-leg lateral jumps, Leidersdorf 2022), i.e. instantaneous peaks of ~9-10 m/s^2; lab sidestep trunk acceleration around initiation ~4.5 m/s^2 (light cue) vs ~9-10 m/s^2 against a live opponent (Fujii 2015, figure read-off). Recreational nominal 4 m/s^2 effective (2.5-7); instantaneous peaks perhaps 7-9 m/s^2 (inferred). Braking at the end of a move can be ~1.5x the acceleration (judgement). Footwork adaptation prior (added 2026-10-07) for a RECREATIONAL player: a human-capability limit, not a physics parameter. No study measures recreational table-tennis footwork directly; recreational values are extrapolated from trained-athlete lab data, elite table-tennis match data and badminton/tennis analogues. See docs/physics-priors.md 'Footwork adaptation'."
+  },
+  "adaptation_footwork_displacement_max_m": {
+    "value": 0.32,
+    "min": 0.08,
+    "max": 0.75,
+    "unit": "m",
+    "source_ids": [
+      "fujii_2015",
+      "wakatsuki_2020",
+      "vuong_2022",
+      "yoshida_1991",
+      "derived_here",
+      "fujii_2013"
+    ],
+    "source": "Derived: latency, then constant acceleration to a speed cap (model calibrated against athlete sidestep data); value is for 0.7 s of warning",
+    "confidence": "low",
+    "notes": "Largest lateral pelvis displacement achievable before contact, as a function of the WARNING TIME t_w (from when the ball's destination is knowable to contact). Model (derived here; both research sub-agents converged on it independently): no movement for adaptation_footwork_latency_s L, then constant adaptation_footwork_accel_max_mps2 a up to adaptation_footwork_speed_max_mps v, arriving still moving ('free arrival', usual in table tennis): D = 0 for t_w <= L; D = a T^2 / 2 for T = t_w - L <= v/a; else D = v^2/(2a) + v (T - v/a). Arriving at rest (accelerate then brake at the same rate) gives about half. 'value' is the nominal at t_w = 0.7 s; min/max are the slow/fast recreational cases at 0.7 s; the arrays give the full table. Nominal (L 0.30 s, a 4 m/s^2, v 1.8 m/s): 0 / 0.08 / 0.32 / 0.68 / 1.04 m at 0.3 / 0.5 / 0.7 / 0.9 / 1.1 s. Slow (0.45, 2.5, 1.2): 0 / 0 / 0.08 / 0.25 / 0.49 m. Fast (0.22, 7, 2.5): 0.02 / 0.27 / 0.75 / 1.25 / 1.75 m. Elite for comparison: reactive (0.25, 9, 3.5) 0.01 / 0.28 / 0.89 / 1.59 m; anticipating (0.15, 8, 2.8) 0.09 / 0.49 / 1.05 / 1.61 m. Checks: the athlete calibration reproduces ~1.06 m in ~0.9 s after a light (Fujii 2013 / Wakatsuki 2020) and Vuong's 0.5 m / 1 m distance-time profile. Context: elite inter-hit time 0.56-0.66 s with returns under 0.4 s in 6.4 % of cases (Yoshida 1991), so with reactive play the pelvis moves only ~0-0.3 m between shots and arm reach (~0.6-0.8 m beyond the pelvis, not included) does the rest. Assumes a static ready stance, purely lateral motion, no split-step (which saves ~0.1 s in skilled players). Footwork adaptation prior (added 2026-10-07) for a RECREATIONAL player: a human-capability limit, not a physics parameter. No study measures recreational table-tennis footwork directly; recreational values are extrapolated from trained-athlete lab data, elite table-tennis match data and badminton/tennis analogues. See docs/physics-priors.md 'Footwork adaptation'.",
+    "warning_s": [
+      0.3,
+      0.5,
+      0.7,
+      0.9,
+      1.1
+    ],
+    "nominal_m": [
+      0.0,
+      0.08,
+      0.32,
+      0.68,
+      1.04
+    ],
+    "min_m": [
+      0.0,
+      0.0,
+      0.08,
+      0.25,
+      0.49
+    ],
+    "max_m": [
+      0.02,
+      0.27,
+      0.75,
+      1.25,
+      1.75
+    ],
+    "stop_at_target_nominal_m": [
+      0.0,
+      0.04,
+      0.16,
+      0.36,
+      0.64
+    ],
+    "model": {
+      "latency_s": 0.3,
+      "accel_mps2": 4.0,
+      "speed_mps": 1.8
+    }
+  },
+  "adaptation_footwork_step_length_m": {
+    "value": 0.4,
+    "min": 0.25,
+    "max": 0.55,
+    "unit": "m",
+    "source_ids": [
+      "glynn_2014",
+      "malagoli_lanzoni_2019",
+      "no_source"
+    ],
+    "source": "Judgement anchored on elite table-tennis movement coding (0.425 m grid; Glynn 2014)",
+    "confidence": "low",
+    "notes": "Typical lateral foot travel in one table-tennis step. No study reports measured step lengths in table-tennis footwork; elite cadet movements coded on a 0.425 m floor grid were one or two cells (0.425 / 0.85 m; Glynn 2014). In elite matches the most common action is a single step (men 35.6 %) or no step at all (women 40.2 %), then the chasse (~20 %) (Malagoli Lanzoni 2019). A single step moves the pelvis roughly half the foot travel (~0.2-0.25 m). Recreational nominal 0.40 m (0.25-0.55). Judgement. Footwork adaptation prior (added 2026-10-07) for a RECREATIONAL player: a human-capability limit, not a physics parameter. No study measures recreational table-tennis footwork directly; recreational values are extrapolated from trained-athlete lab data, elite table-tennis match data and badminton/tennis analogues. See docs/physics-priors.md 'Footwork adaptation'."
+  },
+  "adaptation_footwork_step_length_max_m": {
+    "value": 0.8,
+    "min": 0.6,
+    "max": 0.9,
+    "unit": "m",
+    "source_ids": [
+      "glynn_2014",
+      "lam_2017",
+      "kuntze_2010",
+      "yu_2019_chasse",
+      "no_source"
+    ],
+    "source": "Judgement; elite table-tennis lateral jump ~0.85 m (Glynn 2014), badminton maximal lunge 1.45-1.49 m (with an approach)",
+    "confidence": "low",
+    "notes": "Largest single lateral step (foot travel) for a recreational player. Elite cadet lateral jumps ~0.85 m (Glynn 2014); maximal badminton lunges 149 cm (elite) vs 145 cm (intermediate) but after an approach run (Lam 2017; Kuntze 2010). A two-step chasse takes 0.52-0.59 s in elite players (Yu 2019) and can shift the pelvis ~0.8-1.0 m. Judgement. Footwork adaptation prior (added 2026-10-07) for a RECREATIONAL player: a human-capability limit, not a physics parameter. No study measures recreational table-tennis footwork directly; recreational values are extrapolated from trained-athlete lab data, elite table-tennis match data and badminton/tennis analogues. See docs/physics-priors.md 'Footwork adaptation'."
+  },
+  "sources": [
+    {
+      "id": "ittf_statutes_2025",
+      "citation": "ITTF (2025). ITTF Statutes 2025, Chapter 2 'The Laws of Table Tennis', clauses 2.1 (table), 2.2 (net assembly), 2.3 (ball), 2.4 (racket), 2.6.2 (service toss), pp. 38-40. Official repository https://db.ittf.com/document ; text verified from the mirror https://cdn.megaspin.net/rules/pdf/2025/ittf-rules-2.pdf"
+    },
+    {
+      "id": "ittf_t1_2016",
+      "citation": "ITTF Equipment Committee (2016). Technical Leaflet T1: The Table, BoD approval 2016_v2: section 4.4 overall dimensions and tolerances, 4.6 flatness and board thickness, 4.8 friction (advisory), 4.9 bounce 230-260 mm from 300 mm and uniformity. https://www.ittf.com/wp-content/uploads/2018/07/T1_Table_BoD_2016_v2.pdf (read via Wayback snapshot 20230804035510)"
+    },
+    {
+      "id": "ittf_t2_2015",
+      "citation": "ITTF Equipment Committee (2015). Technical Leaflet T2: The Net Assembly, BoD approval 2015_v2: criteria 1-8 (mesh 7.5-12.5 mm, tape <= 15 mm, height adjustable 152.5 +/- 4.5 mm, post 152.5 +/- 2 mm outside the side line) and the 100 g tension gauge (p. 7). https://www.ittf.com/wp-content/uploads/2018/07/T2_The_net_assembly_2015_v2.pdf (read via Wayback snapshot 20230804035459)"
+    },
+    {
+      "id": "ittf_t3_2018",
+      "citation": "ITTF Equipment Committee (2018). Technical Leaflet T3: The Ball (Version for 40mm Balls), BoD approval 2018: B.1 weight 2.67-2.77 g, B.3 size (non-celluloid 40.00-40.60 mm), B.7 bounce 240-260 mm (celluloid) / 240-265 mm (non-celluloid) from 305 mm onto a standard S235 steel block, B.10 hardness 0.68-0.81 mm (seam) / 0.70-0.90 mm (seamless) under 50 N; balls conditioned at 23 +/- 1 C, 50 +/- 5 % RH. https://www.ittf.com/wp-content/uploads/2018/07/T3_Ball_BoD2018.pdf (read via Wayback snapshot 20221231225139). A later 'M3 Ball Manual' (BoD 2021) and 'ITTF Quality Programme for Balls Manual' (Sept 2025) exist but could not be opened."
+    },
+    {
+      "id": "ittf_t3_2014",
+      "citation": "ITTF Equipment Committee (2014). Technical Leaflet T3: The Ball (Version for 40mm Balls), BoD approval 2014 (temporary non-celluloid tolerances until 1 Jan 2016). Mirror: https://nttc.nl/wp-content/uploads/2015/05/ITTF_T3.pdf"
+    },
+    {
+      "id": "ittf_t4_2017",
+      "citation": "ITTF Equipment Committee (2017). Technical Leaflet T4: Racket Coverings, BoD approval 2017, effective 1 Jan 2018: 4.0 mm maximum sandwich-rubber thickness, 2.0 mm pimpled rubber, pimple geometry, and clause 8 'coefficient of kinetic friction between the rubber and a table tennis ball must be at least 0.50' for pimples-out (normal force 50 mN). https://www.ittf.com/wp-content/uploads/2017/10/T4_Racket_Coverings_BOD2017.pdf_0.pdf (read via Wayback snapshot 20220314233011)"
+    },
+    {
+      "id": "ittf_plastic_qa_2014",
+      "citation": "ITTF Equipment Committee (2014). 'Plastic Balls Q&A' presentation, distributed by Table Tennis England: spec comparison celluloid vs plastic, and 'Real, measured diameters of the approved plastic balls are between 40.02 and 40.40 mm'. https://newsarchive.tabletennisengland.co.uk/content/uploads/2014/09/Plastic_Balls_Q_A.pdf"
+    },
+    {
+      "id": "tsukamoto_2025",
+      "citation": "Tsukamoto T., Sakai T., Saito K. (2025). 'A Study on the Simple Quality Evaluation of Table Tennis Balls with a Rebound-Type Hardness Tester' (in Japanese), Proc. 58th Academic Lecture Meeting, College of Industrial Technology, Nihon University, paper 5-6, pp. 481-482 (non-peer-reviewed abstract). Tables 1-3: Nittaku Premium Clean 40+ (n=25) mass 2.69 +/- 0.01 g, diameter 40.11 +/- 0.02 mm, steel-plate COR from 305 mm 0.920 +/- 0.002; Nittaku training ball 2.72 g, 40.09 mm, COR 0.880. https://www.cit.nihon-u.ac.jp/laboratorydata/kenkyu/kouennkai/reference/No.58/pdf/5-6.pdf"
+    },
+    {
+      "id": "lu_2024",
+      "citation": "Lu Y., Ren J., Wang J., Wang Y. (2024). 'Effect of table tennis balls with different materials and structures on the hardness and elasticity'. PLOS ONE 19(4): e0301560. doi:10.1371/journal.pone.0301560. Nine ball types; new-material (plastic) balls harder and bounce higher on steel than celluloid; seamless higher than seamed."
+    },
+    {
+      "id": "zhang_2014_lajss",
+      "citation": "Zhang X.W., Tao Z., Zhang Q.M. (2014). 'Dynamic behaviors of visco-elastic thin-walled spherical shells impact onto a rigid plate'. Latin American Journal of Solids and Structures 11: 2607-2623. doi:10.1590/S1679-78252014001400009. Celluloid ball R = 19.8 mm, shell h = 0.38 mm, m = 2.67 g; Table 1 COR and contact time vs impact speed 4-45 m/s on marble; E = 2.4 GPa (citing Ruan et al. 2006)."
+    },
+    {
+      "id": "weener_us10478678",
+      "citation": "Flockenhagen G., Prox M., Quaid L. (Weener Plastik GmbH) (2019). US Patent 10478678 B2, 'Celluloid-free, substantially spherical hollow body and fabrication thereof': ABS/PC blend density 1.07 g/cm3 (ISO 1183), wall thickness 0.2-1.3 mm (particularly 0.3-0.8 mm), E about 2000 MPa. https://patents.google.com/patent/US10478678B2/en"
+    },
+    {
+      "id": "schneider_2022",
+      "citation": "Schneider R., Lewerentz L., Kemnitz S., Schultz C. (2022). 'Table Tennis and Physics', in Simulation Modeling - Recent Advances, New Perspectives, and Applications, IntechOpen. doi:10.5772/intechopen.107026. Secondary review; summarises Inaba et al. 2017: celluloid COR drops faster than plastic above about 20 km/h; plastic has higher friction at low tangential contact speed."
+    },
+    {
+      "id": "cipm_2007",
+      "citation": "Picard A., Davis R.S., Glaeser M., Fujii K. (2008). 'Revised formula for the density of moist air (CIPM-2007)'. Metrologia 45: 149-155. doi:10.1088/0026-1394/45/2/004. https://www.nist.gov/sites/default/files/documents/calibrations/CIPM-2007.pdf (formula implemented and evaluated here)"
+    },
+    {
+      "id": "codata_gn",
+      "citation": "CODATA / NIST. Standard acceleration of gravity g_n = 9.80665 m s^-2 (exact, defined by the 3rd CGPM 1901). https://physics.nist.gov/cgi-bin/cuu/Value?gn"
+    },
+    {
+      "id": "wgs84_gravity",
+      "citation": "NIMA (2000). Department of Defense World Geodetic System 1984, TR8350.2 3rd ed., Eq. 4-1 (Somigliana normal gravity g = 9.7803253359 (1 + 0.00193185265241 sin^2 phi) / sqrt(1 - 0.00669437999013 sin^2 phi)); formula verified via https://en.wikipedia.org/wiki/Theoretical_gravity, not from the NIMA PDF itself."
+    },
+    {
+      "id": "ussa_1976",
+      "citation": "NOAA/NASA/USAF (1976). U.S. Standard Atmosphere, 1976, NASA-TM-X-74335, p. 19 Eq. 51: Sutherland viscosity mu = beta T^1.5 / (T + S), beta = 1.458e-6 kg/(s m K^0.5), S = 110.4 K."
+    },
+    {
+      "id": "conti_2026",
+      "citation": "Conti C., Yang B., Sigrist A., Miele L., Saraiji Y., Duerr P., Takahashi N. (Sony AI) (2026). 'Physics Models for Sim-to-Real Transfer in Professional-Level Robot Table Tennis'. arXiv:2606.28805v2. Nittaku Nexcel 40+ balls, 277 games, about 58,000 flight segments at 200 Hz; Eq. 2 flight model, Table I C_D(v_eff, Sp), Eq. 5 and Tables II-III C_M(v_eff, omega), table and racket contact models."
+    },
+    {
+      "id": "nakashima_2014",
+      "citation": "Nakashima A., Okamoto T., Hayakawa Y. (2014). 'An Online Estimation of Rotational Velocity of Flying Ball via Aerodynamics'. Preprints of the 19th IFAC World Congress, Cape Town, pp. 7176-7181. https://skoge.folk.ntnu.no/prost/proceedings/ifac2014/media/files/1890.pdf. C_D = 0.505 + 0.065 cos(phi), C_M = 0.094 - 0.026 cos(phi) (F_M = C_M rho V omega x v), identified near S = 1.0-1.1; rho = 1.184 kg/m3. Same values in Liu C., PhD thesis, Nagoya University (2013), Eq. 3.1-3.2."
+    },
+    {
+      "id": "miyazaki_2017",
+      "citation": "Miyazaki T., Sakai K., Komatsu T., Takahashi M., Himeno R. (2017). 'Lift crisis of a spinning table tennis ball'. European Journal of Physics 38: 024001. doi:10.1088/1361-6404/aa51ea. PAYWALLED: abstract only verified ('A deep valley of C_L was found around SP = 0.5, and the lift force ... almost vanished at Re = 9.0e4 and 0.48 < SP < 0.5'; 3.0e4 < Re < 9.0e4)."
+    },
+    {
+      "id": "ito_2025",
+      "citation": "Ito K., Kamijima K. (2025). 'Estimation of Aerodynamic Properties of a Spinning Table Tennis Ball Using CFD Analysis' (in Japanese). Transactions of the Japan Society for Simulation Technology 17(1): 25-31 (J-STAGE). LES at 2.5-20 m/s and 15-90 rps: C_D 0.475-0.62 (Table 2), C_L 0.073-0.418 (Table 3), torque coefficient C_m 3.8e-4 to 0.223 (Table 5) with T = C_m pi a^3 rho v^2."
+    },
+    {
+      "id": "ito_2022",
+      "citation": "Ito K., Kamijima K. (2022). 'Three-dimensional flight trajectory simulation of a table tennis ball using aerodynamic coefficients from CFD' (in Japanese). Trans. JSST 14(1): 36-42. Defines T_m = C_m pi a^3 rho |v|^2 (Eq. 4); its k-epsilon C_D 0.24-0.52 is rejected (superseded by Ito 2025)."
+    },
+    {
+      "id": "kamijima_2014",
+      "citation": "Kamijima K., Ushiyama Y., Yasaka T., Oba M. (2014). 'Change in rotation rate of a table-tennis ball during flight' (in Japanese). Niigata Journal of Physical Education 32: 3-10. https://niit.repo.nii.ac.jp/record/843 . Robot-launched topspin 2000-4000 rpm at 8.5-12 m/s; regressions imply 3.9-5.7 % spin loss over 2.3-2.6 m."
+    },
+    {
+      "id": "dambrosio_2024",
+      "citation": "D'Ambrosio D.B., Abeyruwan S., Graesser L., et al. (2024). 'Achieving Human Level Competitive Robot Table Tennis'. arXiv:2408.03906. Table V MuJoCo parameters: density 1.225, viscosity 1.8e-5, blunt drag 0.235 (measured; = standard C_D 0.47 in MuJoCo's convention), Magnus lift coefficient 1.0 (MuJoCo default, not measured), angular drag 0."
+    },
+    {
+      "id": "tebbe_2020",
+      "citation": "Tebbe J., Klamt L., Gao Y., Zell A. (2020). 'Spin Detection in Robotic Table Tennis'. ICRA 2020, arXiv:1905.07967: C_D = 0.4, rho = 1.29, C_M = 0.6 with F = 1/2 C_M rho A r (omega x v) (assumed values)."
+    },
+    {
+      "id": "abeyruwan_2022",
+      "citation": "Abeyruwan S., Graesser L., D'Ambrosio D.B., et al. (2022). 'i-Sim2Real: Reinforcement Learning of Robotic Policies in Tight Human-Robot Interaction Loops'. arXiv:2207.06572: rho = 1.29, C_d = 0.47, no spin."
+    },
+    {
+      "id": "achenbach_1972",
+      "citation": "Achenbach E. (1972). 'Experiments on the flow past spheres at very high Reynolds numbers'. J. Fluid Mech. 54(3): 565-575. doi:10.1017/S0022112072000874. Abstract only verified (smooth spheres 5e4 <= Re <= 6e6); used only for the location of the smooth-sphere drag crisis (Re about 3e5), corroborated by Cross, 'Sports ball aerodynamics', University of Sydney lecture notes."
+    },
+    {
+      "id": "butterfly_tb_alc",
+      "citation": "Butterfly (manufacturer). Timo Boll ALC blade specification: ~86 g, 5.7 mm, blade 157 x 150 mm, FL handle 100 x 24 mm, 5W+2AC. https://shop.butterflyonline.com/timo-boll-alc"
+    },
+    {
+      "id": "butterfly_korbel",
+      "citation": "Butterfly (manufacturer). Petr Korbel blade specification: ~91 g, 5.9 mm, blade 158 x 152 mm, FL handle 100 x 25 mm, 5W. https://shop.butterflyonline.com/petr-korbel-blades"
+    },
+    {
+      "id": "butterfly_tenergy05",
+      "citation": "Butterfly (manufacturer). Tenergy 05 inverted rubber: sponge thickness 2.1 / 1.9 / 1.7 mm, sponge hardness 36 (Butterfly scale), red or black, no weight published. https://www.butterfly-global.com/en/products/detail/05800.html"
+    },
+    {
+      "id": "duerr_2026_ace",
+      "citation": "Duerr P., El Gheche M., Maeda G.J., Mukai N., Takahashi N., et al. (Sony AI) (2026). 'Outplaying elite table tennis players with an autonomous robot'. Nature 652: 886-891. doi:10.1038/s41586-026-10338-5. Open access. Methods Eq. 1: c_d = 0.55, c_M = 0.1 |v|/(r|omega|) - 0.001 (i.e. C_L about 0.27), rho = 1.204; table eps = 0.98 - 0.02 v_z, mu = 0.25. Public match data (about 4,000 post-event ball states, 5 elite and 2 professional humans vs the robot): https://github.com/SonyResearch/ace_public (match_data.csv), analysed by this work."
+    },
+    {
+      "id": "xie_2002",
+      "citation": "Xie W., Teh K.C., Qin Z.F. (2002). 'Speed and spin of 40mm table tennis ball and the effects on elite players'. Proc. ISBS 2002, Caceres, pp. 623-626. https://ojs.ub.uni-konstanz.de/cpa/article/view/846 . Singapore national team, 200 Hz; Table 1 ranges of player means."
+    },
+    {
+      "id": "lee_xie_2004",
+      "citation": "Lee K.T., Xie W. (2004). 'The variation in spins produced by Singapore elite table tennis players on different types of service'. Proc. ISBS 2004, Ottawa, pp. 326-329."
+    },
+    {
+      "id": "yoshida_2014",
+      "citation": "Yoshida K. (2014). Doctoral thesis, Juntendo University: serve spin of 2009 World Championships quarter-finalists, 329 serves at 1000 fps, 13.7-62.5 rps, men 46.0 +/- 9.0, women 39.2 +/- 9.3 rps. Abstract only verified: https://jair.repo.nii.ac.jp/records/2003238"
+    },
+    {
+      "id": "kidokoro_2025",
+      "citation": "Kidokoro S., et al. Sports Biomechanics 24(3): 778-794. doi:10.1080/14763141.2022.2156916. Forehand topspin 'participants' average (117 +/- 29 rps)'. Paywalled: abstract only verified."
+    },
+    {
+      "id": "tian_2024",
+      "citation": "Tian Y., Xiao Y. (2024). 'Research on the difference of stroke characteristics and stroke effect between different stroke duration of table tennis players'. Scientific Reports 14: 25405. doi:10.1038/s41598-024-76802-2. Chinese national grade-one players (n = 34), radar ball speed and 4500 fps spin, Table 4."
+    },
+    {
+      "id": "belli_2019",
+      "citation": "Belli T., Misuta M.S., de Moura P.P.R., et al. (2019). 'Reproducibility and Validity of a Stroke Effectiveness Test in Table Tennis Based on the Temporal Game Structure'. Frontiers in Psychology 10: 427. doi:10.3389/fpsyg.2019.00427. Table 4: offensive-stroke ball speed 45.8 +/- 1.3 km/h (regional) and 45.0 +/- 2.6 km/h (local novices)."
+    },
+    {
+      "id": "etaat_2025",
+      "citation": "Etaat D., Kalaria D., Rahmanian N., Sastry S.S. (2025). 'LATTE-MV: Learning to Anticipate Table Tennis Hits from Monocular Videos'. arXiv:2503.20936 (CVPR 2025). Professional broadcast reconstruction: mean ball speed 11.25 m/s, 80 % within 5.36-18.27 m/s; mean time between hits 0.56 s."
+    },
+    {
+      "id": "rahmanian_2026",
+      "citation": "Rahmanian N., Kienzle D., Gossard T., et al. (2026). 'TT4D: A Pipeline and Dataset for Table Tennis 4D Reconstruction From Monocular Videos'. arXiv:2605.01234: 'The ball typically crosses between 5-15 cm above the net'."
+    },
+    {
+      "id": "leite_2017",
+      "citation": "Leite J.V.M., Barbieri F.A., Miyagi W., Malta E.S., Zagatto A.M. (2017). 'Influence of Game Evolution and the Phase of Competition on Temporal Game Structure in High-Level Table Tennis Tournaments'. Journal of Human Kinetics 55: 55-63. doi:10.1515/hukin-2016-0048. World-class men, 21 matches: rally 3.3 s, rest 18.6 s, shots per rally median 4 (range 1-38)."
+    },
+    {
+      "id": "zagatto_2010",
+      "citation": "Zagatto A.M., Morel E.A., Gobatto C.A. (2010). 'Physiological responses and characteristics of table tennis matches determined in official tournaments'. Journal of Strength and Conditioning Research 24(4): 942-949. doi:10.1519/JSC.0b013e3181cb7003. Abstract only verified: rally 3.4 +/- 1.7 s, rest 8.1 +/- 5.1 s, E:R 0.4."
+    },
+    {
+      "id": "pradas_2021",
+      "citation": "Pradas F., de la Torre A., Castellar C., Toro-Roman V. (2021). 'Physiological Profile, Metabolic Response, and Temporal Structure in Elite Individual Table Tennis: Differences According to Gender'. IJERPH 18: 11898. Table 2: rally 3.6 +/- 0.3 s (men), 4.3 +/- 1.07 s (women); rest 13.6 / 11.2 s."
+    },
+    {
+      "id": "picabea_2023",
+      "citation": "Picabea J.M., Camara J., Nakamura F.Y., Yanci J. (2023). 'Heart Rate Response, Temporal Structure and the Stroke Technique Distribution in Table Tennis National Category Matches'. IJERPH 20: 739. doi:10.3390/ijerph20010739. Spanish second national league, 7,505 strokes: landing zones (Table 3) and temporal structure."
+    },
+    {
+      "id": "bankosz_2018",
+      "citation": "Bankosz Z., Winiarski S. (2018). 'Correlations between Angular Velocities in Selected Joints and Velocity of Table Tennis Racket during Topspin Forehand and Backhand'. Journal of Sports Science and Medicine 17: 330-338. Table 1: racket speed at contact 11.6-14.6 m/s in topspin (elite junior women)."
+    },
+    {
+      "id": "nakashima_2010",
+      "citation": "Nakashima A., Ogawa Y., Kobayashi Y., Hayakawa Y. (2010). 'Modeling of rebound phenomenon of a rigid ball with friction and elastic effects'. Proc. American Control Conference 2010, pp. 1410-1415. doi:10.1109/ACC.2010.5530520. https://nagoya.repo.nii.ac.jp/record/12580/files/1031.pdf . Table: e = 0.93 (average of 25 drops, international table), mu = 0.25 (spring balance, onset of sliding); slip/roll point-contact model (Eq. 13-19); racket rubber e = 0.81 and tangential impulse P = -k_p v_T with k_p = 1.9e-3 kg."
+    },
+    {
+      "id": "inaba_2017",
+      "citation": "Inaba Y., Tamaki S., Ikebukuro H., Yamada K., Ozaki H., Yoshida K. (2017). 'Effect of changing table tennis ball material from celluloid to plastic on the post-collision ball trajectory'. Journal of Human Kinetics 55: 29-38. doi:10.1515/hukin-2017-0004. Nittaku Premium 3-star balls on a table, backspin, vertical speed 8-38 km/h: Fig. 1a COR (plastic e = 1.0002 - 0.0058 v[km/h]; celluloid 1.0418 - 0.0096 v), Fig. 1b apparent friction (plastic 0.2526 + 0.0011 v_cp[km/h]; celluloid 0.1635 + 0.0017 v_cp). NOTE: the p. 32 text attaches the two COR regressions to the opposite balls; Fig. 1a, the abstract and the paper's trajectory results agree with the assignment used here."
+    },
+    {
+      "id": "gossard_2026_rubber",
+      "citation": "Gossard T. et al. (2026). 'Learning Racket-Ball Bounce Dynamics Across Diverse Rubbers for Robotic Table Tennis'. arXiv:2604.11349. 8,194 bounces on 10 robot-mounted rackets, launcher up to 12 m/s and 125 rps: Fig. 3 linear COR fits (offensive rubbers slope 0.021 per m/s, intercept 0.89-0.91; allround 0.017, 0.81-0.86; anti-spin 0.53); tangential compliance k_p about 0.0019 kg falling slightly with slip speed."
+    },
+    {
+      "id": "gossard_2026_serve",
+      "citation": "Gossard T., Koepff, Ziegler (2026). 'Event-Time Hybrid Optimal Control for Robotic Table Tennis Serves'. arXiv:2608.08157. Fig. 3a table COR fit COR(v_n) = e0 + s_e (v_n - v_lim) sigma(lambda_e (v_n - v_lim)), e0 = 0.9422, v_lim = 4.786 m/s, s_e = -0.0317 s/m, lambda_e = 0.8996 s/m over 1.5-11.5 m/s; friction assumed 0.3."
+    },
+    {
+      "id": "remond_2022",
+      "citation": "Remond T., Dolique V., Rinaldi R.G., Geminard J.-C. et al. (2022). 'Dynamical buckling of a table-tennis ball impinging normally on a rigid target: experimental and numerical studies'. Physical Review E 106: 014207. HAL hal-03718994. Cornilleau P-ball 3-star, ABS, 2.7 g, 40 mm, shell (500 +/- 20) um by X-ray tomography; on glass the shell buckles above v_c = (5.5 +/- 0.5) m/s; COR about 0.95 at 1 m/s, 0.92 near 5 m/s, then falling (about 0.83 at 8, 0.78 at 10, 0.76 at 12 m/s, read from Fig. 6a); contact time about 0.6 ms."
+    },
+    {
+      "id": "remond_2023",
+      "citation": "Remond T. et al. (2023). 'Oblique impact of a buckling table-tennis ball on a rigid surface'. Physical Review E 107: 055007. doi:10.1103/PhysRevE.107.055007. HAL hal-04119819. Normal COR independent of tangential speed; ABS-on-glass friction 0.22 (0.18-0.26), celluloid about 0.16; rolling exit below about 46 deg incidence."
+    },
+    {
+      "id": "remond_2024",
+      "citation": "Remond T. et al. (2024). 'Normal impact of a ball rotating around its linear velocity'. Physical Review E 110: 015002. HAL hal-04673325. Spin about the normal (101-318 rad/s) does not change the normal COR; model of the loss of that spin component."
+    },
+    {
+      "id": "remond_2025",
+      "citation": "Remond T., Dolique V., Rinaldi R.G., Geminard J.-C. (2025). 'Effect of a compliant substrate on the rebound of a table-tennis ball'. Preprint, HAL hal-04800695v2. A silicone layer lowers the normal COR by about 10 % or more relative to a rigid target; friction about 0.92; contact time about 0.8 ms."
+    },
+    {
+      "id": "rinaldi_2019",
+      "citation": "Rinaldi R.G., Manin L., Moineau S., Havard N. (2019). 'Table Tennis Ball Impacting Racket Polymeric Coatings: Experiments and Modeling of Key Performance Metrics'. Applied Sciences 9(1): 158. doi:10.3390/app9010158. 2 mm foam + 1.77 mm pips-in top sheet on a rigid backing: normal COR about 0.70 at 14 m/s (Fig. 5b), about 10 % lower at oblique incidence; model ball shell 0.39 mm."
+    },
+    {
+      "id": "dambrosio_2023",
+      "citation": "D'Ambrosio D.B. et al. (2023). 'Robotic Table Tennis: A Case Study into a High Speed Learning System'. arXiv:2309.03315. Table VIII PyBullet parameters: table restitution 0.92 (measured, randomised +/- 0.15), paddle restitution measured 0.78-0.84 but 0.44 transferred best for a rigid simulated paddle; lateral friction table 0.33, paddle 1.092 (engine parameters)."
+    },
+    {
+      "id": "cross_2014",
+      "citation": "Cross R. (2014). 'Impact behavior of hollow balls'. American Journal of Physics 82: 189-195. doi:10.1119/1.4839055. Paywalled: abstract only verified ('Ping pong balls ... buckle inwards at high impact speeds')."
+    },
+    {
+      "id": "cross_racquet_power",
+      "citation": "Cross R. 'Racquet power'. Tennis Warehouse University, https://twu.tennis-warehouse.com/learning_center/racquetpower.php . Apparent COR e_A = (e M_e - m) / (M_e + m) for a ball of mass m on a free racket of effective mass M_e (formula checked)."
+    },
+    {
+      "id": "kuneth_2020",
+      "citation": "Kueneth T. (2020). 'The transition from celluloid to plastic balls'. ITTF news, 28 Jan 2020 (read via Wayback snapshot 20200814090111 of https://www.ittf.com/2020/01/28/transition-celluloid-plastic-balls/): plastic ball introduced 1 July 2014; ABS 'second generation balls' dominated the approval list by mid-2016; the last celluloid supplier withdrew approval, and the last celluloid balls leave the list by end of 2020."
+    },
+    {
+      "id": "calibration_2026",
+      "citation": "HIM table-tennis calibration agent (2026-10-06). ~/data/him-table-tennis/reports/calibration.md, sections 5 and 8: Antioch sensitivity run adc07a2f41f94762b5970baba5466b81 (suite 21df5277bf52441e8abdd77e0272ab15, 756 environments); Section D predictive-check run dbe48673efdb4f9f98fd5ddc35aabd3a (calibration suite v5 92bf4569fce74a079ce89968aee0b1bb); local LOSO fits derived/calibration/agreement/table_estimates.json (sha256 prefix 9eb8782830642d3f): curve scale 1.0016 +/- 0.0025 (free-velocity, n 1050) and 1.0264 +/- 0.0032 (impact law, n 839). Project evidence, not a publication. Update 2026-10-06 evening (calibration.md s14, after ball-track's depth-bias reconciliation): Section D run ad447e14b2be4e8097f80f8f80e4a596 (before: c1699f3fa7a645ac9c0d7a19a53a3971); sensitivity v6 run 45c179b953924f018b2fd8485ab1dcfa (suite 0a0c7ffb3f984624838120d1eb8c5e0b); calibration v6 suite f2724dd89a4b44de819626cf28a0bdaf; LOSO impact-law curve scale 1.0241 +/- 0.0015 (scalar 0.942, folds 0.940-0.944) and free-velocity 1.0103 +/- 0.0016 (0.930; 0.949 spin-corrected)."
+    },
+    {
+      "id": "bootsma_1990",
+      "citation": "Bootsma R.J., van Wieringen P.C.W. (1990). 'Timing an attacking forehand drive in table tennis'. Journal of Experimental Psychology: Human Perception and Performance 16(1): 21-29. doi:10.1037/0096-1523.16.1.21. Full text read (scan). 5 top Dutch male players, flat 'nonspin smash', 7 drives each, 125 fps film. Table 1: tau-margin at initiation SD 7.7-28.3 ms, movement time 92-178 ms (SD 4.8-20.9), contact-location SD 2.7-8.0 cm; Table 2: bat direction-of-travel SD at contact 0.024-0.076 rad, rate of change 11.8-16.3 rad/s, timing accuracy 2.03-4.72 ms ('as precise as 2-5 ms', derived as SD(direction)/rate); Table 3: last moment of control 105-156 ms before contact; p. 27: 'at least 2 of the 5 subjects were still altering their movement during execution'."
+    },
+    {
+      "id": "bootsma_2010",
+      "citation": "Bootsma R.J., Fernandez L., Morice A.H.P., Montagne G. (2010). 'Top-level players' visual control of interceptive actions: Bootsma and van Wieringen (1990) 20 years later'. J Exp Psychol: Human Perception and Performance 36(4): 1056-1063. doi:10.1037/a0019327. Full text read. p. 1060: timing accuracy 3.1 +/- 1.2 ms at contact vs 17.4 +/- 7.9 ms at onset, movement-duration variability 11.7 +/- 7.7 ms; visuomotor delay 105-156 ms (121 +/- 21); Table 1 within-player SDs (B&W 1990 vs van Soest 2010 players): bat direction 0.046 vs 0.056-0.080 rad, contact location 4.9 vs 9-11 cm, movement time 11.7 vs 23.7-27.8 ms."
+    },
+    {
+      "id": "van_soest_2010",
+      "citation": "van Soest A.J., Casius L.J.R., de Kok W., Krijger M., Meeder M., Beek P.J. (2010). 'Are fast interceptive actions continuously guided by vision? Revisiting Bootsma and van Wieringen (1990)'. J Exp Psychol: HPP 36(4): 1040-1055. doi:10.1037/a0016890. Abstract only: 'The results contain no indications that visual information that becomes available after drive initiation affects arm motion' (7 players, top Dutch women's league)."
+    },
+    {
+      "id": "rodrigues_2000",
+      "citation": "Rodrigues S.T. (2000). 'Visuo-motor coordination in table tennis'. PhD thesis, University of Calgary. doi:10.11575/prism/12832 (full text read); journal version Rodrigues, Vickers & Williams (2002) J Sports Sci 20: 187-200, doi:10.1080/026404102317284754 (abstract only; same data assumed). Target-side cue 2366 / 521 / 327 ms before contact: accuracy 47.6 % (pre-cue) vs 30.3 % (late cue); forward-swing onset 605 -> 665 ms and contact 766 -> 818.5 ms after launch (late cue), swing duration 157.6 ms (SD 49.9) unchanged; ball not tracked late in flight."
+    },
+    {
+      "id": "brenner_smeets_1997",
+      "citation": "Brenner E., Smeets J.B.J. (1997). 'Fast responses of the human hand to changes in target position'. Journal of Motor Behavior 29(4): 297-310. doi:10.1080/00222899709600017. Full text read (personal.fgb.vu.nl/ebrenner/pdfs/JMB97.pdf): hitting a disk with a rod, movement time about 250 ms; response 'about 110 ms' to 2-4 cm target jumps, 120 ms to target motion; 'Most of the adjustment took place between 100 and 300 ms after the perturbation'; extra lateral acceleration peaks about 5-10 m/s^2 (Fig. 5)."
+    },
+    {
+      "id": "brenner_smeets_2015",
+      "citation": "Brenner E., Smeets J.B.J. (2015). 'How people achieve their amazing temporal precision in interception'. Journal of Vision 15(3): 8. doi:10.1167/15.3.8. Full text read: lateral correction latency about 116 ms (vertical 109 ms), 169 ms when timing had to change; experts 'reputed to reliably hit balls when the time window ... is 4 ms or less'; non-expert interception SD just above 5-6 ms."
+    },
+    {
+      "id": "brenner_smeets_2014",
+      "citation": "Brenner E., Smeets J.B.J. (2014). Front. Hum. Neurosci. 8: 342. doi:10.3389/fnhum.2014.00342. Full text read: hitting falling balls with timing SD about 7 ms; 12.5-23 ms under constraints."
+    },
+    {
+      "id": "brenner_2026",
+      "citation": "Brenner E., Bom S., Smeets J.B.J. (2026). 'Intercepting moving targets: does the visuomotor latency depend on whether one taps on the target or slides through it?'. Experimental Brain Research 244: 70. doi:10.1007/s00221-026-07264-3. Full text read: latency 114.4 +/- 2.4 ms (tapping) and 114.1 +/- 2.3 ms (sliding), N = 22; 1 cm jumps gave 1.64 cm endpoint separation (of 2 cm) and an 8.4 ms timing shift."
+    },
+    {
+      "id": "oostwoud_wijdenes_2011",
+      "citation": "Oostwoud Wijdenes L., Brenner E., Smeets J.B.J. (2011). 'Fast and fine-tuned corrections when the target of a hand movement is displaced'. Experimental Brain Research 214: 453-462. doi:10.1007/s00221-011-2843-4. Full text read: latencies 96-121 ms; 2 cm jumps with 0.17-0.45 s remaining corrected 87-100 %; peak acceleration difference about 5 m/s^2 (0.45 s left) to 25-30 m/s^2 (0.2 s left) between opposite jumps."
+    },
+    {
+      "id": "brenner_2023",
+      "citation": "Brenner E., de la Malla C., Smeets J.B.J. (2023). 'Tapping on a target: dealing with uncertainty about its position and motion'. Experimental Brain Research 241: 81-104. doi:10.1007/s00221-022-06503-7. Full text read, p. 86: 'Steps that were more than 200 ms before the end of the movement are fully corrected for ... Between 150 and 100 ms before the tap there is a partial correction. Steps less than 100 ms before the tap are not corrected for at all' (mm-scale steps)."
+    },
+    {
+      "id": "brenner_1998",
+      "citation": "Brenner E., Smeets J.B.J., de Lussanet M.H.E. (1998). 'Hitting moving targets: continuous control of the acceleration of the hand on the basis of the target's velocity'. Experimental Brain Research 122: 467-474. doi:10.1007/s002210050535. Full text read: a change in target velocity affects hand speed after about 200 ms."
+    },
+    {
+      "id": "brenner_2022",
+      "citation": "Brenner E. et al. (2022). 'The influences of target size and recent experience on the vigour of adjustments to ongoing movements'. Experimental Brain Research 240: 1219. doi:10.1007/s00221-022-06325-7. Full text read: 'the shorter the remaining time the more vigorous the response'; peak lateral acceleration about 4-10 m/s^2 for 2.6 cm jumps with 350-410 ms left (Fig. 5C)."
+    },
+    {
+      "id": "le_runigo_2005",
+      "citation": "Le Runigo C., Benguigui N., Bardy B.G. (2005). 'Perception-action coupling and expertise in interceptive actions'. Human Movement Science 24: 429-445. doi:10.1016/j.humov.2005.06.008. Abstract only: simulated ball speed change 400 ms before arrival; visuomotor delay 162 ms (tennis experts) vs 221 ms (non-experts); timing errors -29 vs -124 ms (deceleration), 69 vs 116 ms (acceleration)."
+    },
+    {
+      "id": "mcleod_1987",
+      "citation": "McLeod P. (1987). 'Visual reaction time and high-speed ball games'. Perception 16: 49-59. doi:10.1068/p160049. Abstract only: international cricketers facing unpredictable bounces 'show reaction times of around 200 ms'; the 'at least the first 190 ms' figure is as quoted by Bootsma & van Wieringen 1990, p. 22."
+    },
+    {
+      "id": "marinovic_2008_2009",
+      "citation": "Marinovic W., Plooy A.M., Tresilian J.R. (2008) Exp Brain Res 188: 275, doi:10.1007/s00221-008-1360-6; (2009) Exp Psychol 56: 265, doi:10.1027/1618-3169.56.4.265. Abstracts only: brief (about 180 ms) interceptive movements are prepared in advance and triggered about 150 ms before onset; amplitude can be built in only if cued more than about 200 ms before onset."
+    },
+    {
+      "id": "voudouris_2013",
+      "citation": "Voudouris D., Smeets J.B.J., Brenner E. (2013). 'Ultra-fast selection of grasping points'. Journal of Neurophysiology 110: 1484. doi:10.1152/jn.00066.2013. Full text read: grip orientation followed a 12 deg object rotation after 115 ms (cube) and 130 ms (ball)."
+    },
+    {
+      "id": "van_mierlo_2009",
+      "citation": "van Mierlo C.M., Louw S., Smeets J.B.J., Brenner E. (2009). 'Slant cues are processed with different latencies for the online control of movement'. Journal of Vision 9(3): 25. doi:10.1167/9.3.25. Full text read: hand-orientation responses to a +/-10 deg surface-slant change began at 0.15-0.21 s (Table 1); angular-velocity difference between conditions about 60-90 deg/s by 0.35 s (Fig. 5)."
+    },
+    {
+      "id": "sheppard_li_2007",
+      "citation": "Sheppard A., Li F.-X. (2007). 'Expertise and the control of interception in table tennis'. European Journal of Sport Science 7(4): 213-222. doi:10.1080/17461390701718505. Abstract only: 'Bat direction and orientation showed reducing variability in the approach to contact, whereas bat position, speed, and acceleration did not'."
+    },
+    {
+      "id": "iino_kojima_2009",
+      "citation": "Iino Y., Kojima T. (2009). 'Kinematics of table tennis topspin forehands: effects of performance level and ball spin'. Journal of Sports Sciences 27(12): 1311-1321 (abstract), with the ISBS 2008 one-page version read in full: 'The players adjusted the racket face angle rather than the inclination of the racket path at impact to the different ball spins'; racket speed at impact about 19 m/s (advanced). Size of the face-angle change UNVERIFIED (paywalled)."
+    },
+    {
+      "id": "navia_2021",
+      "citation": "Navia J.A., Aviles C., Dicks M., Ruiz-Perez L.M. (2021). 'The spatiotemporal control of expert tennis players when returning first serves: a perception-action perspective'. Journal of Sports Sciences. doi:10.1080/02640414.2021.1976484. Accepted manuscript read: 12 expert men (6 ATP), trunk onset towards the ball 177 ms after the server's contact (median 176, SD 42); split-step landing ~131-156 ms."
+    },
+    {
+      "id": "mecheri_2019",
+      "citation": "Mecheri S., Laffaye G., Triolet C., Leroy D., Dicks M., Choukou M.A., Benguigui N. (2019). 'Relationship between split-step timing and leg stiffness in world-class tennis players when returning fast serves'. Journal of Sports Sciences 37: 1962-1971. doi:10.1080/02640414.2019.1609392. Accepted manuscript read: initial foot movement towards the ball 266 +/- 43 ms (seniors) vs 311 +/- 33 ms (juniors); racket 187 +/- 22 ms."
+    },
+    {
+      "id": "triolet_2013",
+      "citation": "Triolet C., Benguigui N., Le Runigo C., Williams A.M. (2013). 'Quantifying the nature of anticipation in professional tennis'. Journal of Sports Sciences 31(8): 820-830. doi:10.1080/02640414.2012.759658. Abstract only: reaction/anticipation transition '140-160 ms after ball contact'."
+    },
+    {
+      "id": "fujii_2015",
+      "citation": "Fujii K., Yamashita D., Kimura T., Isaka T., Kouzaki M. (2015). 'Preparatory body state before reacting to an opponent: short-term joint torque fluctuation in real-time competitive sports'. PLoS ONE 10(5): e0128571. doi:10.1371/journal.pone.0128571. Full text read (values from Fig. 4): defender trunk initiation ~140 ms after a live attacker vs ~295 ms in a light-cued choice sidestep; peak lateral trunk velocity ~2.45 m/s."
+    },
+    {
+      "id": "fujimoto_2021",
+      "citation": "Fujimoto M., Uchida E., Nagano A., Rogers M.W., Isaka T. (2021). 'Preparatory knee flexion-extension movements enhance rapid sidestepping performance in collegiate basketball players'. Frontiers in Sports and Active Living 3: 670649. doi:10.3389/fspor.2021.670649. Full text read: two-choice sidestep initiation (force onset) 230 +/- 38 / 253 +/- 40 ms; step-limb unloading 113-130 ms."
+    },
+    {
+      "id": "wakatsuki_2020",
+      "citation": "Wakatsuki T., Yamada N. (2020). 'Difference between intentional and reactive movement in side-steps: patterns of temporal structure and force exertion'. Frontiers in Psychology 11: 2186. doi:10.3389/fpsyg.2020.02186. Full text read, Table 2: light-cued sidestep to 60 % of body height (~1.06 m), movement time 715 +/- 56 ms from force onset, peak lateral velocity 2.45 +/- 0.29 m/s at 427 +/- 43 ms, peak lateral force 731 +/- 129 N (~1.0 body weight); 10 trained young men."
+    },
+    {
+      "id": "vuong_2022",
+      "citation": "Vuong J.-L., Edel A., Voss P., Ferrauti A. (2022). 'Effectiveness and kinematic analysis of initial step patterns for multidirectional acceleration in team and racquet sports'. Journal of Human Kinetics 85: 13-22. doi:10.2478/hukin-2022-0106. Full text (PMC9808808): 22 competitive athletes, maximal lateral starts; reaction time 0.244-0.255 s; centre-of-mass distance-time profiles (0.5 m in about 0.25-0.34 s and 1 m in 0.40-0.50 s after onset, per the sub-agent's reading of Table 2)."
+    },
+    {
+      "id": "zemkova_2014",
+      "citation": "Zemkova E., Hamar D. (2014). 'Agility performance in athletes of different sport specializations'. Acta Gymnica 44(3): 133-140. doi:10.5507/ag.2014.013. Full text read: four-choice single step (~0.57 m), stimulus to foot contact 306.1 +/- 22.2 ms (table-tennis athletes) vs 362.2 +/- 27.0 ms (tennis)."
+    },
+    {
+      "id": "castellar_2019",
+      "citation": "Castellar C., Pradas F., Carrasco L., De La Torre A., Gonzalez-Jurado J.A. (2019). 'Analysis of reaction time and lateral displacements in national level table tennis players: are they predictive of sport performance?'. International Journal of Performance Analysis in Sport 19(4): 467-477. doi:10.1080/24748668.2019.1621673. Accepted manuscript read: light cue to leaving the contact mat 0.67 +/- 0.13 s (n = 116; includes push-off), 5 m lateral sprint total 1.99 +/- 0.15 s for senior men."
+    },
+    {
+      "id": "hulsdunker_2019",
+      "citation": "Hulsdunker T., Ostermann M., Mierau A. (2019). 'The speed of neural visual motion perception and processing determines the visuomotor reaction time of young elite table tennis athletes'. Frontiers in Behavioral Neuroscience 13: 165. doi:10.3389/fnbeh.2019.00165. Full text read: seated button press, EMG onset 181/206 ms, visuomotor reaction time 232/258 ms (Table 1); hand response, not footwork."
+    },
+    {
+      "id": "leidersdorf_2022",
+      "citation": "Leidersdorf E., Rauch J., et al. (2022). 'Reliability and effectiveness of a lateral countermovement jump for stratifying shuffling performance amongst elite basketball players'. Sports 10(11): 186. doi:10.3390/sports10110186. Full text: peak lateral force 8.9-9.5 N/kg in single-leg lateral countermovement jumps (ceiling on lateral acceleration)."
+    },
+    {
+      "id": "hsueh_2016",
+      "citation": "Hsueh Y.-C., Pan K.-M., Tsai C.-L. (2016). 'Hop timing of split step and kinetics analysis of lower extremities in badminton start footwork'. Proc. ISBS 2016, Tsukuba. https://ojs.ub.uni-konstanz.de/cpa/article/view/6891 . Full text (poor OCR): split-step landing 0.117-0.138 s after the opponent's stroke; peak push-off within ~0.3 s; lateral peak push-off ~0.85-1.2 body weight."
+    },
+    {
+      "id": "yoshida_1991",
+      "citation": "Yoshida K., Iimoto Y., Ushiyama Y., Kaga M., Suzuki K. (1991). 'Analysis of a movement of a top table tennis player using a Direct Linear Transformation (DLT) method' (in Japanese). Japanese Journal of Sport Education Studies 11(2): 91-102 (J-STAGE). Full text read: one Olympic champion (1988), 0.1 s sampling; mean speed per rally 0.99-1.18 m/s at the hips, 1.36-1.51 m/s at the ankles; 3.5-4.0 m moved per rally; waiting time 0.66 +/- 0.19 s, under 0.4 s in 6.4 % of returns; cites whole-body reaction (jump to light) of 0.32-0.38 s for top Japanese players."
+    },
+    {
+      "id": "malagoli_lanzoni_2019",
+      "citation": "Malagoli Lanzoni I., Katsikadelis M., Straub G., Djokic Z. (2019). 'Footwork technique used in elite table tennis matches'. International Journal of Racket Sports Science 1(2): 44-48. https://digibug.ugr.es/handle/10481/59707 . Full text read: 7,095 steps in elite matches; men one step 35.6 %, no step 20.4 %, chasse 19.7 %, crossover 11.1 %, pivot 9.9 %, slide 3.2 %; women no step 40.2 %, one step 21.9 %, chasse 21.7 %."
+    },
+    {
+      "id": "glynn_2014",
+      "citation": "Glynn J., Rusga T., Hartley J., et al. (2014). 'Implications for physical preparation of cadet male table tennis players: analysis of the 2013 Asian Championship singles final'. Proc. ISBS 2014, Johnson City, pp. 171-176. https://ojs.ub.uni-konstanz.de/cpa/article/view/6025 . Full text: movements coded on a 0.425 m floor grid; typical lateral jump ~0.85 m; movements 'each performed in less than a second'."
+    },
+    {
+      "id": "yu_2019_chasse",
+      "citation": "Yu C., Shao S., Awrejcewicz J., Baker J.S., Gu Y. (2019). 'Lower limb maneuver investigation of chasse steps among male elite table tennis players'. Medicina 55(4): 97. doi:10.3390/medicina55040097. Full text read: 'The time for performing the two chasse steps were 0.52 +/- 0.02 s and 0.59 +/- 0.01 s' (short/long); 12 national-level men."
+    },
+    {
+      "id": "palazzi_2013",
+      "citation": "Palazzi D.A., Glynn J.A., Williams B.K. (2013). 'A pilot investigation into a measure of table tennis movement efficiency using kinetic data'. icSPORTS 2013 (SciTePress). Full text: academy youths, mean peak medio-lateral force 0.32-0.42 body weight in forehand/backhand alternation (1.5 Hz low-pass, so peaks underestimated)."
+    },
+    {
+      "id": "kuntze_2010",
+      "citation": "Kuntze G., Mansfield N., Sellers W. (2010). 'A biomechanical analysis of common lunge tasks in badminton'. Journal of Sports Sciences 28: 183. doi:10.1080/02640410903428533. Repository copy read: national-level men, approach speed 2.65-2.74 m/s to a lunge of ~1.4 m."
+    },
+    {
+      "id": "valldecabres_2018",
+      "citation": "Valldecabres R., et al. (2018). 'An exploration of the effect of proprioceptive knee bracing on biomechanics during a badminton lunge to the net, and the implications to injury mechanisms'. PeerJ 6: e6033. doi:10.7717/peerj.6033. Full text: recreational players, approach velocity 2.2 +/- 0.3 and 2.1 +/- 0.4 m/s."
+    },
+    {
+      "id": "lam_2017",
+      "citation": "Lam W.-K., et al. (2017). PLoS ONE 12(3): e0174604. doi:10.1371/journal.pone.0174604. Full text, Table 1: maximal badminton lunge 149.2 cm (elite) vs 144.6 cm (intermediate)."
+    },
+    {
+      "id": "filipcic_2017",
+      "citation": "Filipcic A., Leskosek B., Filipcic T. (2017). 'Split-step timing of professional and junior tennis players'. Journal of Human Kinetics 55: 97. doi:10.1515/hukin-2017-0009. Full text: split-step about 0.31 s after the opponent's contact (ATP 0.306 +/- 0.062 s; U14 0.354 +/- 0.147 s)."
+    },
+    {
+      "id": "zhou_2021",
+      "citation": "Zhou H., et al. (2021). Journal of Visualized Experiments 172: e62571. doi:10.3791/62571. Abstract only: table-tennis chasse vs cross-step lateral ground reaction force -0.46 +/- 0.29 vs -0.38 +/- 0.21 (units not stated; presumably body weight), 16 national level-1 male players."
+    },
+    {
+      "id": "hulsdunker_2017",
+      "citation": "Hulsdunker T., Struder H.K., Mierau A. (2017). Medicine & Science in Sports & Exercise 49: 1097. doi:10.1249/MSS.0000000000001198. Abstract only: seated visuomotor response, EMG onset 178 ms (badminton players) vs 217 ms (non-athletes); visuomotor reaction time 243 vs 274 ms."
+    },
+    {
+      "id": "fujii_2013",
+      "citation": "Fujii K., Yoshioka S., Isaka T., Kouzaki M. (2013). Journal of Electromyography and Kinesiology 23: 1467-1473. doi:10.1016/j.jelekin.2013.08.001. Abstract only: light-cued sidestep initiation 301 vs 314 ms (with vs without a preparatory bounce); reaching time 883 vs 910 ms (basketball players)."
+    },
+    {
+      "id": "derived_here",
+      "citation": "Derived in this document from the cited inputs (calculation scripts kept with the agent report); not an independent measurement."
+    },
+    {
+      "id": "no_source",
+      "citation": "No published measurement found; engineering judgement only."
+    },
+    {
+      "id": "cross_2015_low_bounce",
+      "citation": "Cross R. (2015). 'Why low bounce balls exhibit high rolling resistance'. Physics Education 50(6): 717-721."
+    },
+    {
+      "id": "cross_2016_rolling",
+      "citation": "Cross R. (2016). 'Coulomb's law for rolling friction'. American Journal of Physics 84(3): 221-230."
+    },
+    {
+      "id": "cross_2015_roughness",
+      "citation": "Cross R. (2015). 'Effects of surface roughness on rolling friction'. European Journal of Physics 36: 065029."
+    }
+  ]
+}

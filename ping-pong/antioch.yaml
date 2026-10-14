@@ -1,0 +1,96 @@
+schema_version: 6
+# The id is the immutable identity every session and run binds to.
+id: ping-pong-40009da473c0444188ac40f9ce5a8c48
+name: ping-pong
+# Remote commands refuse unless the signed-in organization is HIM Robotics, so
+# a run, a session or an asset push can never land in another organization.
+organization_id: org_R94gKeCzTxrpN61i
+scenario_paths: ["scenarios.py"]
+
+# Two engine services, each behind its own profile, so a session boots exactly
+# one simulator. A submission activates the union of its scenarios' profiles,
+# so a suite never mixes `replay` and `robot` scenarios (tests/test_contract.py
+# enforces this). Start an interactive session with
+# `antioch session new --profile replay` or `--profile robot`.
+services:
+  # Isaac Sim 6.0.1: the recorded HIM sessions replayed with live ball physics,
+  # ActorCore players, RTX cameras and 24 fps telemetry.
+  replay:
+    profiles: [replay]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    resources:
+      gpu: rtx-pro-6000
+    environment:
+      COMPOSITOR_URL: http://compositor:8771
+      # Rerun batches non-camera telemetry for 2 s instead of its default
+      # (fewer, larger chunks).
+      RERUN_FLUSH_TICK_SECS: "2"
+    depends_on:
+      compositor:
+        condition: service_healthy
+    sync:
+      - source: .
+        target: /workspace/project
+
+  # The MP4 encoder for the replay's full-rate broadcast clip.
+  compositor:
+    profiles: [replay]
+    build:
+      context: .
+      dockerfile: compositor/Dockerfile
+    command: [python, -m, compositor.worker]
+    resources:
+      cpu: "2"
+      memory: 2Gi
+    ports:
+      - name: compositor
+        port: 8771
+        protocol: tcp
+        direction: client-to-service
+    healthcheck:
+      test: [CMD, python, -m, compositor.health]
+      interval: 5s
+      timeout: 10s
+      retries: 60
+
+  # Isaac Lab 3.0: the humanoid at the table (the trained policy and the
+  # template) and the stroke retargeter (CPU).
+  robot:
+    profiles: [robot]
+    build:
+      context: .
+      dockerfile: robot.Dockerfile
+    resources:
+      gpu: rtx-pro-6000
+    sync:
+      - source: .
+        target: /workspace/project
+
+# Each suite stays on one engine.
+suites:
+  replay-smoke:
+    description: "Isaac Sim: the first point of HIM session 2 with live ball physics (every replay test must pass), and the dead-table negative control (its drop test must fail)."
+    select:
+      - scenarios: [replay_him_session]
+        cases: [session-2-first-point, nc-dead-table]
+  robot-smoke:
+    description: "Isaac Lab: the trained G1 rallying at 64 envs with its blind control, the bare G1-at-table template, and the 10-stroke retargeting probe."
+    select:
+      - scenarios: [play_ping_pong_policy]
+        cases: [g1-rally-smoke]
+      - scenarios: [load_humanoid_at_table]
+        cases: [unitree-g1]
+      - scenarios: [retarget_him_strokes]
+        cases: [unitree-g1-smoke]
+  replay-evidence:
+    description: "Isaac Sim: the whole of HIM session 2 replayed with live ball physics; every replay test must pass."
+    select:
+      - scenarios: [replay_him_session]
+        cases: [session-2]
+  robot-evidence:
+    description: "Isaac Lab: the trained G1 rallying at 2048 envs for 30 s against the HIM opponent, with its blind control."
+    select:
+      - scenarios: [play_ping_pong_policy]
+        cases: [g1-rally]
