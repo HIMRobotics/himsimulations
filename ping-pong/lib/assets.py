@@ -141,6 +141,8 @@ ASSETS: dict[str, Asset] = {
             name="ping-pong/him-mocap-strokes",
             version="v1",
             file="him-mocap-strokes-v1.zip",
+            sha256="f3eed08c3706925f9cb55a0c22cd6bdd61c49f3ee2fcdb884bdf6353173e8b92",
+            bytes=33351893,
             source="HIM's mocap strokes on the table frame with paddle contacts (tools/build_mocap_strokes.py)",
         ),
         Asset(
