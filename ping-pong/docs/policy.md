@@ -57,9 +57,10 @@ passes, every env reset at the start of each:
    from the ball must collapse here. This is a *negative control*: a test that must fail, to prove the measurement
    can tell the difference.
 
-Run it without `--stream` for now: streamed as a run, it hangs just after compiling. The README's
-[Watch it live in Mission Control](../README.md#watch-it-live-in-mission-control) has the details, and the ways to
-watch the robot live that do work.
+Add `--stream` to watch env 0 live in Mission Control, through the film's own camera. Streamed, the run films that
+side view only, without the overhead 8F view (a streamed Isaac Lab run hangs with it attached). The film stops when
+the policy's pass ends, so the blind control plays on in the same view with no ball drawn. The README's
+[Watch it live in Mission Control](../README.md#watch-it-live-in-mission-control) has the details.
 
 ## The policy in detail
 

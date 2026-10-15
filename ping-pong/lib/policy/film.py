@@ -6,7 +6,7 @@ around env 0's table, its calibrated ceiling lighting, and two cameras, each log
 simulated time it shows:
 
 - ``camera``: the ``cine_wide`` broadcast view, 1920 x 1080;
-- ``camera_8f``: HIM's own overhead Orbbec 8F, calibrated, 640 x 480.
+- ``camera_8f``: HIM's own overhead Orbbec 8F, calibrated, 640 x 480, in unstreamed runs only (below).
 
 The ball (and the opponent's paddle, a red disc posed where the coupling has it) are drawn only while in play, and
 only while the film runs. The other envs are hidden from the render (their physics runs), and so are the grid floor's
@@ -16,6 +16,10 @@ mesh and the dome light. Nothing here changes a physics result.
 film stays the same whoever watches, its camera is locked against the viewer's mouse (``ROBOT_SIMULATION_CONFIG``
 turns arrow-key flying off) and its size is pinned against the viewer's window: a capture under way when either
 changes waits for a frame that never comes, and the film loses it.
+
+A streamed run films ``camera`` only. With the 8F's render product attached as well, a streamed Isaac Lab scenario run
+deadlocks in the Kit update Isaac Lab runs every step (a fault reported to Antioch), so :func:`livestreaming` leaves it
+out. An unstreamed run films both.
 """
 
 from __future__ import annotations
@@ -33,6 +37,16 @@ PARKED_BELOW_M: float = -1.0
 """A blade below this height in the table frame is parked out of play, and not drawn."""
 CAMERA_LOCK: str = "omni:kit:cameraLock"
 """Kit's camera lock: the viewport's mouse navigation leaves a camera carrying it ``True`` where it is."""
+LIVESTREAM_EXTENSION: str = "omni.kit.livestream.app"
+"""Kit's livestream extension: enabled exactly when the simulator streams its window to Mission Control."""
+
+
+def livestreaming() -> bool:
+    """Whether this Kit streams its window to Mission Control (its livestream extension is enabled)."""
+
+    import omni.kit.app
+
+    return bool(omni.kit.app.get_app().get_extension_manager().is_extension_enabled(LIVESTREAM_EXTENSION))
 
 
 def hide_other_envs(stage: Any, num_envs: int, keep: int = 0) -> int:
@@ -57,7 +71,7 @@ class TwinFilm:
 
     :param logger: ``antioch.Logger`` (its prefix joins the streams' paths).
     :param scene: The table scene (built with ``visuals=True``).
-    :param orbbec_8f: Also stream HIM's Orbbec 8F view.
+    :param orbbec_8f: Also stream HIM's Orbbec 8F view (never while :func:`livestreaming`).
     """
 
     def __init__(self, logger: Any, scene: Any, *, orbbec_8f: bool = True) -> None:
@@ -74,7 +88,9 @@ class TwinFilm:
         env = scene.env
         stage = get_current_stage()
         self.table_offset = env.table_offset[0].detach().cpu().numpy()
-        self.twin = author_him_twin(stage, self.table_offset, orbbec_8f=orbbec_8f)
+        streamed = livestreaming()
+        print(f"[film] livestream {'on: filming cine_wide only' if streamed else 'off'}", flush=True)
+        self.twin = author_him_twin(stage, self.table_offset, orbbec_8f=orbbec_8f and not streamed)
         UsdGeom.Imageable(stage.GetPrimAtPath("/World/ground")).MakeInvisible()
         dome = stage.GetPrimAtPath("/World/dome")
         if dome.IsValid():

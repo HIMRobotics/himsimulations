@@ -163,8 +163,8 @@ One execution of one case is a *run*. Its record is permanent.
 - **In the Antioch web console.** Sign in with the same account. Each run has a page with its checks, its measured
   results, its files (*artifacts*), and a viewer for its telemetry, including the 24 fps film of the robot in the lab
   twin. Teammates can watch a run there while it's still going.
-- **Live, in Mission Control.** Add `--stream` to a replay run to watch the simulator itself while it works, in
-  your browser: `uv run antioch scenario run replay_him_session --cases session-2-first-point --stream`. See
+- **Live, in Mission Control.** Add `--stream` to a run to watch the simulator itself while it works, in your
+  browser: `uv run antioch scenario run load_humanoid_at_table --cases unitree-g1 --stream`. See
   [Watch it live in Mission Control](#watch-it-live-in-mission-control).
 - **In the terminal:**
 
@@ -360,14 +360,16 @@ A run streams only when you ask. Add `--stream` to the command:
 
 ```bash
 uv run antioch scenario run replay_him_session --cases session-2-first-point --stream
+uv run antioch scenario run load_humanoid_at_table --cases unitree-g1 --stream
+uv run antioch scenario run play_ping_pong_policy --cases g1-rally-smoke --stream
 uv run antioch suite run replay-smoke --stream    # every run in the suite streams
 ```
 
-> **The robot scenarios can't be streamed yet.** Run with `--stream`, `load_humanoid_at_table` and
-> `play_ping_pong_policy` stop dead just after their ball physics compiles, and sit there until the 3-hour limit.
-> It's a fault in streamed Isaac Lab runs, not in your code, and it's been reported to Antioch. Until it's fixed, run
-> them without `--stream` and watch their 24 fps film on the run's console page. If you started one with `--stream`,
-> stop it with `uv run antioch scenario cancel <run id>`.
+> **Streamed, the robot scenarios film one camera.** `load_humanoid_at_table` and `play_ping_pong_policy` normally
+> record two videos of env 0: the side view (`camera`) and HIM's overhead Orbbec 8F view (`camera_8f`). Streamed, they
+> record the side view only, because with the 8F camera attached as well a streamed Isaac Lab run hangs. That's a
+> fault in Antioch's streamed Isaac Lab runs, and it's been reported. Run without `--stream` when you want the 8F
+> view. The checks are the same either way: the film check grades the side view.
 
 Then open the Antioch web console, signed in with the same account, and find the run in Mission Control while it's
 running. The CLI doesn't print a link to the stream. It does keep a note of it: `uv run antioch scenario show
@@ -384,16 +386,16 @@ Good to know:
   Streamed, the replay runs about 8 times slower, so session 2's 16 s first point takes over two minutes to watch. The
   recorded videos play at true speed.
 - **Starting up takes a while.** The picture appears once the simulator has started, within a minute of the run
-  starting. A robot scene in your own session (below) first spends about four minutes compiling the GPU ball physics,
-  and the picture can stand still meanwhile.
+  starting. The robot scenarios then spend about four minutes compiling the GPU ball physics, and the picture can
+  stand still meanwhile.
 
 ### What you'll see
 
 | Scenario | In Mission Control |
 |---|---|
 | `replay_him_session` | The HIM lab from the broadcast camera's spot, high up behind the 8F end of the table: both players head to foot, and the live ball. Fly anywhere you like: you move only the stream's own camera, never a camera the run records |
-| `load_humanoid_at_table` | Not yet (see above). Its recorded film shows the HIM lab twin around env 0 from the side (the `cine_wide` camera): the G1, the drop test and the three feeds |
-| `play_ping_pong_policy` | Not yet (see above). Its recorded film shows env 0 rallying against the opponent's red paddle, from the same side view |
+| `load_humanoid_at_table` | Once the ball physics has compiled, the HIM lab twin around env 0, seen from the side (the `cine_wide` camera): the G1, the drop test and the three feeds. This is the run's film itself, so the other three envs are hidden |
+| `play_ping_pong_policy` | The same view: env 0 rallying against the opponent's red paddle. The other envs (63, or 2047) are hidden but still playing. After the 30 s policy pass the film stops, and the blind control plays on in the same view with no ball drawn |
 | `retarget_him_strokes` | Nothing: it's maths on the CPU, with no simulator and no 3D window to stream. Its telemetry plays the strokes back once they're solved |
 
 ### Looking around
@@ -410,14 +412,14 @@ In the replay, fly the camera from the keyboard. If the keys do nothing, click o
 Isaac's own mouse controls work too: hold the right button and drag to look around (W, A, S and D fly while you hold
 it), Alt + left-drag to orbit, middle-drag to pan, and scroll to zoom. F7 shows or hides Isaac's menus and panels.
 
-When the robot's film runs (`main.py template` or `main.py play` in your own session, below), the view is the film's
-camera, and it's locked: you watch exactly what's being recorded. If you could fly that camera, the film would fly
-with it, and could lose the frames it was capturing as it moved, which would fail the run's film check.
+In the template and the policy, the view is the film's camera, and it's locked: you watch exactly what's being
+recorded. If you could fly that camera, the film would fly with it, and could lose the frames it was capturing as it
+moved, which would fail the run's film check.
 
 ### Stream while you work interactively
 
-This is how to watch the robot today. In a session you started yourself, `service exec` streams one command, and
-`service shell --stream` opens a terminal whose simulator commands stream:
+In a session you started yourself, `service exec` streams one command, and `service shell --stream` opens a
+terminal whose simulator commands stream:
 
 ```bash
 uv run antioch session new --profile robot
@@ -438,8 +440,11 @@ scene, without the lab twin: the envs side by side on a grid floor, which you ca
 
 ### What it costs
 
-- **Time.** Streamed, the simulator also draws its window, the whole lab, for every frame. The streamed first point
-  of session 2 took 6.5 min instead of 3.8 min.
+- **Time, in the replay.** Streamed, the simulator also draws its window, the whole lab, for every frame. The
+  streamed first point of session 2 took 6.5 min instead of 3.8 min.
+- **Little or none, in the robot scenarios.** They draw that window for their film anyway. Three streamed template
+  runs took 4.2, 4.3 and 5.8 min, against 4.1 and 6.0 min unstreamed; most of the spread is the GPU compile, which
+  varies from machine to machine. The streamed policy smoke run took 36.2 min, against 35.2 min unstreamed.
 - **Nothing else.** A streamed run holds the same one GPU, and counts against your quota the same way.
 - **Picture size.** Each run's `renderer_quality` (in `lib/config.py`) caps the stream's picture: `performance` at
   1920 × 1088, `balanced` at 2560 × 1440 (the robot scenarios) and `quality` at 3840 × 2176 (the replay). Mission
@@ -912,16 +917,15 @@ says what went wrong. For a negative control, "passed" means its tests failed, a
 
 ### Can I watch the simulator live?
 
-Yes, the replay: add `--stream` to its `scenario run` or `suite run`, then open Mission Control in the web console
-while the run goes. The robot scenarios can't be streamed as runs yet: they hang just after compiling, so cancel any
-you started with `--stream`. You can watch the robot in a session of your own instead, with `service exec`,
-`service shell` or `jupyter cell` and `--stream`. The telemetry viewer on the run's console page works with or without
-a stream. [Watch it live in Mission Control](#watch-it-live-in-mission-control) explains what you'll see and how to
-move around.
+Yes. Add `--stream` to `scenario run` or `suite run` (or to `service exec`, `service shell` or `jupyter cell` in a
+session of your own), then open Mission Control in the web console while the run goes. Streamed, the robot scenarios
+record their side-view film but not the overhead 8F view. The telemetry viewer on the run's console page works with or
+without a stream. [Watch it live in Mission Control](#watch-it-live-in-mission-control) explains what you'll see and
+how to move around.
 
-If the picture is black or stands still, give it time: Isaac takes about half a minute to start, and a robot scene
-then spends about four minutes compiling the ball physics before anything moves. If you can't connect at all, someone
-else may be watching: one viewer at a time.
+If the picture is black or stands still, give it time: Isaac takes about half a minute to start, and the template and
+the policy then spend about four minutes compiling the ball physics before anything moves. If you can't connect at
+all, someone else may be watching: one viewer at a time.
 
 ### Can I run the simulators on my own computer?
 
