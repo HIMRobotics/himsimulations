@@ -693,6 +693,23 @@ def author_presentation_camera(stage: Usd.Stage, view: PresentationView) -> Auth
     return AuthoredCamera(name=view.name, prim_path=path, resolution=view.resolution, calibrated=False)
 
 
+VIEWPORT_CAMERA: str = "/OmniverseKit_Persp"
+"""Kit's own perspective camera: the viewport's camera, which a run streamed to Mission Control shows and its viewer flies."""
+
+
+def aim_viewport(view: PresentationView) -> None:
+    """
+    Stand the viewport's camera (:data:`VIEWPORT_CAMERA`) at ``view``'s pose, on a stage whose world is the table frame.
+
+    A run streamed to Mission Control opens on this view. A viewer who flies around moves only the viewport's own
+    camera, never a camera the run records; a headless run never renders the viewport.
+    """
+
+    from isaacsim.core.utils.viewports import set_camera_view
+
+    set_camera_view(eye=np.asarray(view.eye_m), target=np.asarray(view.target_m), camera_prim_path=VIEWPORT_CAMERA)
+
+
 @dataclass(frozen=True)
 class PinholeSpec:
     """
@@ -946,6 +963,7 @@ __all__ = [
     "ROOM_COLLIDERS",
     "SERIALS",
     "STAGE_ROOT",
+    "VIEWPORT_CAMERA",
     "AuthoredCamera",
     "ColliderFacts",
     "HimLab",
@@ -955,6 +973,7 @@ __all__ = [
     "OrbbecCalibrationSet",
     "PinholeSpec",
     "PresentationView",
+    "aim_viewport",
     "apply_lab_lighting",
     "author_ball_colliders",
     "author_him_cameras",

@@ -47,8 +47,9 @@ REPLAY_SIMULATION_CONFIG = SimulationConfig(
 """Isaac Sim for the replay. During a replay PhysX steps the paddles and retired balls at 240 Hz while the adapter
 integrates the ball and sweeps its contacts at the 3840 Hz game step (``lib/replay/ball.py``)."""
 
-ROBOT_SIMULATION_CONFIG = SimulationConfig(log_level="warning", timeout_s=3 * 3600)
-"""Isaac Lab for the policy and the template; Lab sets its own physics step (``lib/robots/table_scene.py``)."""
+ROBOT_SIMULATION_CONFIG = SimulationConfig(log_level="warning", keyboard_navigation=False, timeout_s=3 * 3600)
+"""Isaac Lab for the policy and the template; Lab sets its own physics step (``lib/robots/table_scene.py``). Streamed
+to Mission Control, a filmed run shows the film's own camera (``lib/policy/film.py``), so the arrow keys don't fly it."""
 
 # ---- replay_him_session (lib/replay) --------------------------------------------------------------------------------
 

@@ -8,9 +8,14 @@ simulated time it shows:
 - ``camera``: the ``cine_wide`` broadcast view, 1920 x 1080;
 - ``camera_8f``: HIM's own overhead Orbbec 8F, calibrated, 640 x 480.
 
-The ball (and the opponent's paddle, a red disc posed where the coupling has it) are drawn only while in play. The
-other envs are hidden from the render (their physics runs), and so are the grid floor's mesh and the dome light.
-Nothing here changes a physics result.
+The ball (and the opponent's paddle, a red disc posed where the coupling has it) are drawn only while in play, and
+only while the film runs. The other envs are hidden from the render (their physics runs), and so are the grid floor's
+mesh and the dome light. Nothing here changes a physics result.
+
+``camera`` is the viewport itself, so a run streamed to Mission Control shows exactly what the film records. So the
+film stays the same whoever watches, its camera is locked against the viewer's mouse (``ROBOT_SIMULATION_CONFIG``
+turns arrow-key flying off) and its size is pinned against the viewer's window: a capture under way when either
+changes waits for a frame that never comes, and the film loses it.
 """
 
 from __future__ import annotations
@@ -26,6 +31,8 @@ BALL_PRIM: str = "/World/FilmBall"
 OPPONENT_PRIM: str = "/World/FilmOpponentBlade"
 PARKED_BELOW_M: float = -1.0
 """A blade below this height in the table frame is parked out of play, and not drawn."""
+CAMERA_LOCK: str = "omni:kit:cameraLock"
+"""Kit's camera lock: the viewport's mouse navigation leaves a camera carrying it ``True`` where it is."""
 
 
 def hide_other_envs(stage: Any, num_envs: int, keep: int = 0) -> int:
@@ -92,12 +99,17 @@ class TwinFilm:
         self.blade_shown: bool | None = None
         self._show(BALL_PRIM, False)
         self._show(OPPONENT_PRIM, False)
+        # The film is the viewport. Streamed, the viewport would follow the viewer's camera and window: pin both, so the
+        # film is the same streamed or not, and a viewer can't cost it a frame.
+        stage.GetPrimAtPath(self.twin.cine_wide.prim_path).CreateAttribute(CAMERA_LOCK, Sdf.ValueTypeNames.Bool).Set(True)
         viewport = get_active_viewport()
         viewport.camera_path = self.twin.cine_wide.prim_path
+        viewport.fill_frame = False  # a stream fits the viewport to its window by resizing it, which would resize the film
         viewport.resolution = self.twin.cine_wide.resolution
         antioch.capture_viewport()  # the first capture after a camera move is stale
         self.sink = CameraStreamSink(logger, "camera", FPS, max_width=1920)
-        self.rig = CameraRig({"orbbec_8F": self.twin.orbbec_8f}) if self.twin.orbbec_8f is not None else None
+        # On the GPU: streamed, a CPU annotator's copy hangs the Kit update Isaac Lab runs every step (5 of 5 runs).
+        self.rig = CameraRig({"orbbec_8F": self.twin.orbbec_8f}, device="cuda") if self.twin.orbbec_8f is not None else None
         self.sink_8f = CameraStreamSink(logger, "camera_8f", FPS, max_width=640) if self.rig is not None else None
         self.next_frame: float | None = None
         self.frames = 0
@@ -167,6 +179,9 @@ class TwinFilm:
     def close(self) -> dict[str, Any]:
         """Flush the streams; the film's account: frames, failures, the span it covers, each stream's statistics."""
 
+        # No longer posed after this (the policy's blind pass follows), so not drawn either.
+        self._show(BALL_PRIM, False)
+        self._show(OPPONENT_PRIM, False)
         video = self.sink.close().as_dict()
         out: dict[str, Any] = {
             "frames": self.frames,

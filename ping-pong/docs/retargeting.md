@@ -48,7 +48,8 @@ uv run antioch scenario run retarget_him_strokes --cases unitree-g1-smoke
 
 The run publishes its kept strokes to HIM's asset store as `ping-pong/unitree-g1-retargeted-strokes`, versioned by
 the first 8 characters of its run ID. To retarget a different rally, see the README's
-[experiments](../README.md#4-retarget-a-different-rally).
+[experiments](../README.md#4-retarget-a-different-rally). No simulator means no 3D window either, so there's nothing
+to watch live in Mission Control: the run's telemetry, on its console page, plays the strokes back on a stick-figure G1.
 
 ## The algorithm
 

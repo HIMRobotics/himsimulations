@@ -29,10 +29,11 @@ You need a laptop and a terminal, not a GPU. The heavy work runs on Antioch's cl
 1. [What is Antioch?](#what-is-antioch) and [how the pieces fit](#how-the-pieces-fit)
 2. [Quick start](#quick-start)
 3. [The four scenarios](#the-four-scenarios)
-4. [How it works](#how-it-works)
-5. [Your first experiments](#your-first-experiments)
-6. [Adding your own humanoid](#adding-your-own-humanoid)
-7. Reference: [recorded runs](#recorded-runs), [honest limits](#honest-limits),
+4. [Watch it live in Mission Control](#watch-it-live-in-mission-control)
+5. [How it works](#how-it-works)
+6. [Your first experiments](#your-first-experiments)
+7. [Adding your own humanoid](#adding-your-own-humanoid)
+8. Reference: [recorded runs](#recorded-runs), [honest limits](#honest-limits),
    [troubleshooting and FAQ](#troubleshooting-and-faq), [glossary](#glossary), [layout](#layout),
    [development](#development)
 
@@ -162,6 +163,9 @@ One execution of one case is a *run*. Its record is permanent.
 - **In the Antioch web console.** Sign in with the same account. Each run has a page with its checks, its measured
   results, its files (*artifacts*), and a viewer for its telemetry, including the 24 fps film of the robot in the lab
   twin. Teammates can watch a run there while it's still going.
+- **Live, in Mission Control.** Add `--stream` to a run to watch the simulator itself while it works, in your
+  browser: `uv run antioch scenario run load_humanoid_at_table --cases unitree-g1 --stream`. See
+  [Watch it live in Mission Control](#watch-it-live-in-mission-control).
 - **In the terminal:**
 
 ```bash
@@ -242,6 +246,7 @@ def replay_him_session(run, params):  # lib/replay/run.py
     physics = engine_physics(params)  # the calibrated priors, or the negative control's dead table
     build_him_lab(stage, physics)  # room, table, net, colliders, calibrated lighting
     cameras = author_him_cameras(stage, camera_calibrations(session))
+    aim_viewport(BROADCAST)  # where a stream to Mission Control starts
     ball = attach_live_ball(world, stage, physics, roles)  # hybrid contacts, calibrated impact law, RK4 at 3840 Hz
     players = spawn_players(stage, session)  # the recorded player and the inferred opponent
     recorder = open_recorder(run, params, cameras, session, physics)  # simulated beside real at 24 fps, and the MP4
@@ -342,6 +347,113 @@ package = write_package(kept_clips(rallies))  # the kept motion and every stroke
 Each stroke is checked for **reach** (the paddle follows the human's path within 1 cm and 5°), **speed**, **torque**,
 **balance** and **feet** (no sliding, no sinking into the floor). [`docs/retargeting.md`](docs/retargeting.md) has
 the details.
+
+## Watch it live in Mission Control
+
+A run's record is for studying afterwards. **Mission Control** is for watching a run while it happens. It's the part
+of Antioch's web console that shows the simulator's own 3D window live, streamed from the cloud GPU to your browser as
+video: the robot, the ball and the lab, moving as the simulation computes them.
+
+### Stream a run
+
+A run streams only when you ask. Add `--stream` to the command:
+
+```bash
+uv run antioch scenario run replay_him_session --cases session-2-first-point --stream
+uv run antioch scenario run load_humanoid_at_table --cases unitree-g1 --stream
+uv run antioch scenario run play_ping_pong_policy --cases g1-rally-smoke --stream
+uv run antioch suite run replay-smoke --stream    # every run in the suite streams
+```
+
+Then open the Antioch web console, signed in with the same account, and find the run in Mission Control while it's
+running. The CLI doesn't print a link to the stream. It does keep a note of it: `uv run antioch scenario show
+<run id> --json` shows `"livestream": true` for a streamed run.
+
+Good to know:
+
+- **Watching changes nothing.** A streamed run simulates exactly what an unstreamed one does, and passes or fails the
+  same checks. (Streamed, the first point of session 2 played the same strokes, the same 33 ball contacts and the same
+  drop-test rebounds, to the 0.1 mm, as the unstreamed record.)
+- **One viewer at a time.** The simulator streams to one browser at once. If a teammate is already watching, you wait
+  until they close it.
+- **It isn't real time.** You see the simulation at the speed the GPU computes it, which is slower than real life. The
+  replay runs about 6 times slower, so session 2's 16 s first point takes about a minute and a half to watch. The
+  recorded videos play at true speed.
+- **Starting up takes a while.** The picture appears once the simulator has started, within a minute of the run
+  starting. Before the robot scenarios move, they spend about four minutes compiling the GPU ball physics, and the
+  picture can stand still meanwhile.
+
+### What you'll see
+
+| Scenario | In Mission Control |
+|---|---|
+| `replay_him_session` | The HIM lab from the broadcast camera's spot, high up behind the 8F end of the table: both players head to foot, and the live ball. Fly anywhere you like: you move only the stream's own camera, never a camera the run records |
+| `load_humanoid_at_table` | Once the ball physics has compiled, the HIM lab twin around env 0, seen from the side (the `cine_wide` camera): the G1, the drop test and the three feeds. This is the run's film itself, so the other three envs are hidden |
+| `play_ping_pong_policy` | The same view: env 0 rallying against the opponent's red paddle. The other envs (63, or 2047) are hidden but still playing. After the 30 s policy pass the film stops, and the blind control plays on in the same view with no ball drawn |
+| `retarget_him_strokes` | Nothing: it's maths on the CPU, with no simulator and no 3D window to stream. Its telemetry plays the strokes back once they're solved |
+
+### Looking around
+
+In the replay, fly the camera from the keyboard. If the keys do nothing, click on the picture first:
+
+| Keys | What they do |
+|---|---|
+| Arrow keys | Move forward, back and sideways |
+| Shift + arrow keys | Turn, and look up or down |
+| Ctrl + Up or Down | Rise or sink |
+| `-` and `=` | Slow down or speed up, by 1.5 times a press; hold X to double the speed, or Z to halve it |
+
+Isaac's own mouse controls work too: hold the right button and drag to look around (W, A, S and D fly while you hold
+it), Alt + left-drag to orbit, middle-drag to pan, and scroll to zoom. F7 shows or hides Isaac's menus and panels.
+
+In the template and the policy, the view is the film's camera, and it's locked: you watch exactly what's being
+recorded. If you could fly that camera, the film would fly with it, and could lose the frames it was capturing as it
+moved, which would fail the run's film check.
+
+### Stream while you work interactively
+
+In a session you started yourself, `service exec` streams one command, and `service shell --stream` opens a
+terminal whose simulator commands stream:
+
+```bash
+uv run antioch session new --profile robot
+uv run antioch service exec --service robot --stream -- python main.py template unitree-g1
+```
+
+The notebook starts Isaac Lab without a stream. To watch it, open `demo.ipynb` in JupyterLab as usual (see
+[experiment 5](#5-plug-in-your-own-controller)), then, before you run its first code cell, start Isaac Lab in the
+notebook's kernel from a second terminal, with `--stream`:
+
+```bash
+uv run antioch jupyter cell --stream "import antioch; from lib.config import ROBOT_SIMULATION_CONFIG; antioch.start_simulation(ROBOT_SIMULATION_CONFIG)"
+```
+
+`jupyter cell` runs its code in the session's kernel, which is the notebook's while it's the only one open. The
+notebook's own `start_simulation` then finds Isaac Lab already running and carries on. The notebook draws the plain
+scene, without the lab twin: the envs side by side on a grid floor, which you can fly around.
+
+### What it costs
+
+- **A little time.** Streamed, the simulator also draws its window for every frame. The streamed first point of
+  session 2 took 4.4 min instead of 3.8 min.
+- **Nothing else.** A streamed run holds the same one GPU, and counts against your quota the same way.
+- **Picture size.** Each run's `renderer_quality` (in `lib/config.py`) caps the stream's picture: `performance` at
+  1920 × 1088, `balanced` at 2560 × 1440 (the robot scenarios) and `quality` at 3840 × 2176 (the replay). Mission
+  Control fits the picture to your browser window within that cap. Leave the replay's alone: it also sets how the
+  virtual Orbbec cameras render, and the replay compares their frames with HIM's real ones.
+
+### Live stream or recording?
+
+| | Mission Control | The run's record |
+|---|---|---|
+| When | Only while the run goes | Forever |
+| What | The simulator's window, live | Checks, results, the 24 fps films and `broadcast.mp4`, and 3D telemetry |
+| Speed | As fast as the GPU simulates | Plays at true speed, and you can scrub back and forth |
+| Camera | Yours to fly, in the replay | The run's fixed cameras |
+| Who | One viewer at a time | Everyone in the organization |
+| Needs | `--stream` | Nothing: every run records |
+
+Nothing from the stream is saved. To keep a view, use the run's recorded films and telemetry.
 
 ## How it works
 
@@ -796,8 +908,14 @@ says what went wrong. For a negative control, "passed" means its tests failed, a
 
 ### Can I watch the simulator live?
 
-Add `--stream` to `scenario run`. It streams the Isaac window to Mission Control while the run goes. The telemetry
-viewer on the run's console page works with or without it.
+Yes. Add `--stream` to `scenario run` or `suite run` (or to `service exec`, `service shell` or `jupyter cell` in a
+session of your own), then open Mission Control in the web console while the run goes. The telemetry viewer on the
+run's console page works with or without it. [Watch it live in Mission Control](#watch-it-live-in-mission-control)
+explains what you'll see and how to move around.
+
+If the picture is black or stands still, give it time: Isaac takes about half a minute to start, and the template and
+the policy then spend about four minutes compiling the ball physics before anything moves. If you can't connect at
+all, someone else may be watching: one viewer at a time.
 
 ### Can I run the simulators on my own computer?
 
@@ -823,6 +941,7 @@ ball model, and the retargeter's CPU code (see "Running it yourself" in [`docs/r
 - **Legal return**: the robot's hit whose first bounce lands on the opponent's half.
 - **Magnus effect**: the sideways force on a spinning ball that curves its flight.
 - **Manifest**: `antioch.yaml`, the file that describes the project to Antioch.
+- **Mission Control**: the part of the web console that shows a run's simulator live, when the run has `--stream`.
 - **Mocap (motion capture)**: recording a person's movement with sensors.
 - **Negative control**: a deliberately broken run that must fail, proving its checks can fail.
 - **Observation**: the numbers a policy reads about the robot and the ball.
@@ -843,6 +962,7 @@ ball model, and the retargeter's CPU code (see "Running it yourself" in [`docs/r
 - **SDK**: the Antioch Python package `antioch-sim`, which includes the CLI.
 - **Service**: one container a project declares, such as `replay` or `robot`.
 - **Session**: a temporary cloud machine running one profile of the project.
+- **Stream (livestream)**: the simulator's 3D window, sent live to your browser as video (see Mission Control).
 - **Suite**: a named group of scenario cases in `antioch.yaml`.
 - **Telemetry**: what a run logs over time (video, 3D scenes, plots), viewable on its console page.
 - **URDF, USD**: the standard robot description format, and the 3D scene format Isaac reads.

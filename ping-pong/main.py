@@ -15,8 +15,10 @@ at a time, from ``ping-pong/`` on your computer::
 
     uv run python main.py list                     # every preset, on your computer, without a simulator
 
-Each command calls the same scenario as ``antioch scenario run``. ``list`` and ``--help`` start no simulator. Release
-the session with ``uv run antioch session release`` when you're done, so it stops using your organization's compute.
+Each command calls the same scenario as ``antioch scenario run``. ``list`` and ``--help`` start no simulator. Swap
+``--no-stream`` for ``--stream`` to watch the simulator live in Mission Control (README, "Watch it live in Mission
+Control"). Release the session with ``uv run antioch session release`` when you're done, so it stops using your
+organization's compute.
 """
 
 from __future__ import annotations

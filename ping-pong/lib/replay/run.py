@@ -31,6 +31,7 @@ from lib.him_lab import (
     BROADCAST,
     AuthoredCamera,
     OrbbecCalibration,
+    aim_viewport,
     author_him_cameras,
     build_him_lab,
     clear_stage,
@@ -97,6 +98,7 @@ def replay_him_session(run: antioch.ScenarioRun, params: ReplayParams) -> Replay
     try:
         build_him_lab(stage, physics)  # room, table, net, colliders, calibrated lighting
         cameras = author_him_cameras(stage, camera_calibrations(session))  # the Orbbecs at the session's epochs, the broadcast view
+        aim_viewport(BROADCAST)  # a stream to Mission Control opens on the broadcast view; flying it moves no recorded camera
         ball = attach_live_ball(world, stage, physics, roles(session))  # hybrid contacts, calibrated impact law, RK4 at 3840 Hz
         world.reset()
         bind_live_ball(world, ball)
