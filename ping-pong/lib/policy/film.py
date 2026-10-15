@@ -108,8 +108,7 @@ class TwinFilm:
         viewport.resolution = self.twin.cine_wide.resolution
         antioch.capture_viewport()  # the first capture after a camera move is stale
         self.sink = CameraStreamSink(logger, "camera", FPS, max_width=1920)
-        # On the GPU: streamed, a CPU annotator's copy hangs the Kit update Isaac Lab runs every step (5 of 5 runs).
-        self.rig = CameraRig({"orbbec_8F": self.twin.orbbec_8f}, device="cuda") if self.twin.orbbec_8f is not None else None
+        self.rig = CameraRig({"orbbec_8F": self.twin.orbbec_8f}) if self.twin.orbbec_8f is not None else None
         self.sink_8f = CameraStreamSink(logger, "camera_8f", FPS, max_width=640) if self.rig is not None else None
         self.next_frame: float | None = None
         self.frames = 0
