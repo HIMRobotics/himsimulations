@@ -1,32 +1,50 @@
 # Assets
 
-Every asset this project loads lives in HIM Robotics' Antioch asset store under the `ping-pong/` prefix, pinned by
-version in [`lib/assets.py`](../lib/assets.py), which also holds each file's sha256 and size. Runs fetch them by
-`name@version`; nothing is downloaded by hand. To look at one locally:
+An *asset* is a large file a simulation needs, such as a 3D model, a recording or a trained network, kept outside git.
+Antioch stores assets for each organization in its *asset store*. Every asset has a name and a version, written
+`name@version`, such as `ping-pong/him-session-2@v8`. A version never changes once it's published, so a run that
+names one always gets exactly the same bytes.
+
+Every asset this project loads lives in HIM Robotics' asset store under the `ping-pong/` prefix. Each one is pinned by
+version in [`lib/assets.py`](../lib/assets.py), with its size and its sha256: a fingerprint of the file's bytes, so
+a changed file can't slip in unnoticed. Runs fetch assets by `name@version` with `antioch.fetch_asset`, so you never
+download anything by hand to run a scenario.
+
+To look at one yourself, signed in to the HIM Robotics organization (run from `ping-pong/`):
 
 ```bash
-antioch asset show ping-pong/him-session-2 -v v8
-antioch asset pull ping-pong/him-session-2 -v v8 -o /tmp/
+uv run antioch asset list -q ping-pong                          # every asset whose name or description says ping-pong
+uv run antioch asset show ping-pong/him-session-2 -v v8         # one version: its size, digest and description
+uv run antioch asset pull ping-pong/him-session-2 -v v8 -o /tmp/  # download it
 ```
 
-The Unitree G1 itself is not in the store: Isaac Lab loads Isaac's G1 USD from NVIDIA's asset root at run time, and
-the G1's URDF (BSD-3, Unitree) is vendored in [`lib/robots/urdf/`](../lib/robots/urdf/NOTICE). The ball-physics
-priors (`lib/physics/data/priors.json`) and the Orbbec calibration and ISP (`lib/data/`) are small and stay in git.
+Mind the sizes before pulling: each session recording is 314-500 MB (see [pinned contents](#pinned-contents)).
+
+Three things aren't in the store:
+
+- **The Unitree G1's 3D model.** Isaac Lab loads Isaac's own G1 USD from NVIDIA's asset library on the machine at run
+  time. The G1's URDF (BSD-3, Unitree) is kept in [`lib/robots/urdf/`](../lib/robots/urdf/NOTICE).
+- **The ball-physics priors**, `lib/physics/data/priors.json`. They're small, so they stay in git.
+- **The Orbbec camera calibration and image-processing settings**, `lib/data/`. Also small, also in git.
 
 ## What each asset is
+
+"Used by" names the scenario that loads it: the replay (`replay_him_session`), the policy (`play_ping_pong_policy`,
+whose film also draws the room), the robot scene (the policy and the template, `load_humanoid_at_table`) and
+retargeting (`retarget_him_strokes`).
 
 | Asset | Used by | What it is |
 |---|---|---|
 | `ping-pong/him-lab-room@v2` | replay, robot film | The HIM lab, 10 x 8 x 3 m, rebuilt from the 2026-08-15 capture: floor, walls, the twelve ceiling LED panels (re-lit by `lib.him_lab`), props |
-| `ping-pong/table@v2` | replay | ITTF table 2.74 x 1.525 m with the lab's eight ArUco stickers; its top's finish fitted to the recorded frames |
+| `ping-pong/table@v2` | replay | ITTF table 2.74 x 1.525 m with the lab's eight ArUco stickers (printed markers the cameras locate the table by); its top's finish fitted to the recorded frames |
 | `ping-pong/net@v2` | replay | ITTF net assembly: 15.25 cm high, posts and clamps |
 | `ping-pong/paddle@v2` | replay, robot | Red inverted-rubber paddle, origin at the blade centre, +Z the forehand face |
 | `ping-pong/ball@v2` | replay | 40 mm ball |
-| `ping-pong/actorcore-party-m-0001@2.0.2` | replay | Reallusion ActorCore body of the suited (motion-captured) player, look `A_BlackJacket` |
-| `ping-pong/actorcore-uniform-m-0001@1.0.1` | replay | Reallusion ActorCore body of the opponent |
-| `ping-pong/him-session-{1..7}@v8` | replay | One recorded session each: both players' motion tracks, serves, strokes with their reconstructed paddle contacts, camera calibration epochs, and every recorded Orbbec frame |
-| `ping-pong/g1-rally-policy@e0e0bb45-it1500` | policy | The trained Unitree G1 rally policy (PPO actor-critic state dict, iteration 1500) |
-| `ping-pong/him-opponent-model@v2` | policy | The HIM opponent distilled from the recorded sessions: shot-intent mixture model and rules |
+| `ping-pong/actorcore-party-m-0001@2.0.2` | replay | Reallusion ActorCore 3D body of the suited (motion-captured) player, look `A_BlackJacket` |
+| `ping-pong/actorcore-uniform-m-0001@1.0.1` | replay | Reallusion ActorCore 3D body of the opponent |
+| `ping-pong/him-session-{1..7}@v8` | replay | One recorded session each: both players' motion tracks, serves, strokes with their reconstructed paddle contacts, the cameras' calibration over time, and every recorded Orbbec frame |
+| `ping-pong/g1-rally-policy@e0e0bb45-it1500` | policy | The trained Unitree G1 rally policy: the network's weights after 1500 iterations of PPO training (a PyTorch actor-critic state dict) |
+| `ping-pong/him-opponent-model@v2` | policy | The HIM opponent learnt from the recorded sessions: a network that picks each shot's intent, and rules for reaching the ball |
 | `ping-pong/him-mocap-strokes@v1` | retargeting | HIM's mocap strokes on the table frame with the paddle state at each contact (`tools/build_mocap_strokes.py`) |
 | `ping-pong/g1-retargeted-strokes@v2` | retargeting | HIM's strokes retargeted onto the G1: the worked example's reference output |
 
@@ -35,6 +53,9 @@ The session packages name their player bodies by the ActorCore catalog names the
 packages are byte-identical to the ones the evidence was recorded with.
 
 ## Pinned contents
+
+Each asset's size in bytes and its sha256. This table mirrors `lib/assets.py`, and `tests/test_contract.py` checks
+that every pinned name, version and sha256 appears here, so the two can't drift apart.
 
 | Asset | Bytes | sha256 |
 |---|---|---|

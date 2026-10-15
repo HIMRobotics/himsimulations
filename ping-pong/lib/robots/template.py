@@ -11,8 +11,16 @@ What it does, in every env at once:
 4. while each ball is in play, steps the robot with :meth:`~lib.robots.table_scene.TableScene.hold_default_pose`.
    **Replace that line with your controller.**
 
+**Writing a controller.** An *env* is one copy of the scene; they all step together. An action is one number per
+joint per env, a ``(num_envs, num_joints)`` tensor in the order of ``scene.joint_names``. Each joint's target is
+``default_pose + action_scale * action``, which its PD gains (how stiffly and with how much damping the motor holds a
+target) drive it toward; zeros hold the ready stance. ``scene.step(actions)`` returns the next observation, one row per
+env, whose columns :func:`lib.robots.table_scene.observation_terms` lists in order (116 for the G1; columns 109-111 are
+the ball's position in the pelvis frame). The README's "Your first experiments" walks through a first one.
+
 The preset pins the pelvis (``fixed_base``): with zero actions the robot only holds its pose through its PD gains,
-and a G1 with no balance controller falls. Unpin it once your controller balances::
+and a G1 with no balance controller falls. Unpin it once your controller balances, with a preset in
+``lib/config.py`` such as ``"unitree-g1-unpinned": TemplateParams(fixed_base=False)``, or in code::
 
     params = TEMPLATE_PRESETS["unitree-g1"].model_copy(update={"fixed_base": False})
     load_humanoid_at_table(run, params)
@@ -57,7 +65,11 @@ RECORDED_FEEDS: tuple[tuple[float, ...], ...] = (
     (0.8011, 0.0678, 0.178, -5.3711, -0.4361, 1.0831, 0.0, 0.0, 0.0),
 )
 """Three of HIM's opponent's recorded opening shots toward the robot (table frame: position m, velocity m/s, spin
-rad/s), 4.5-5.5 m/s, each bouncing on the robot's half."""
+rad/s), 4.5-5.5 m/s, each bouncing on the robot's half.
+
+The table frame's origin is the centre of the table top, z up, and the robot stands at the -x end. These feeds travel
+toward -x, so a negative y spin (the eighth number) is topspin and a positive one backspin; z spin is sidespin. To try
+spin, append rows here and launch more balls with a preset's ``balls`` (balls after the drop cycle through these)."""
 
 BALL_CAP_S: float = 4.0
 """The longest any one ball is followed, s."""
@@ -145,7 +157,16 @@ def launch_balls(scene: Any, watch: BallWatch, count: int) -> Any:
 
 
 def load_humanoid_at_table(run: antioch.ScenarioRun, params: TemplateParams) -> TemplateReport:
-    """A humanoid with its paddle at the HIM table, balls launched at it, holding its default pose."""
+    """
+    A humanoid with its paddle at the HIM table, balls launched at it, holding its default pose.
+
+    One loop per ball: the drop test, then each recorded feed. The line marked ``<- replace with your controller``
+    is where your actions go (see the module notes for what an action and an observation are).
+
+    :param run: The active scenario run; the checks are recorded on it.
+    :param params: The robot, the number of envs, whether the pelvis is pinned, how many balls, the time cap, the film.
+    :return: The report; ``passed`` is the verdict.
+    """
 
     import antioch
 
@@ -161,6 +182,7 @@ def load_humanoid_at_table(run: antioch.ScenarioRun, params: TemplateParams) -> 
     finite, steps, endings, rebound = True, 0, {}, None
     for ball in launch_balls(scene, watch, params.balls):  # terminal: every ball at rest or off the table
         while ball.in_play() and steps * scene.step_dt < params.max_sim_s:
+            # scene.step returns the next observation, (num_envs, 116) for the G1: see observation_terms.
             scene.step(actions=scene.hold_default_pose())  # <- replace with your controller
             steps += 1
             finite &= state_is_finite(scene)

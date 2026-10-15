@@ -1,6 +1,51 @@
 # Ball physics
 
-`lib/physics` holds the calibrated table-tennis ball physics that every part of this project shares:
+This page explains how the simulated ball flies, spins and bounces, and how we know it behaves like a real one. Start
+with the short version; the rest of the page is reference, for when you want the equations or a specific number.
+
+## The short version
+
+A table-tennis ball weighs 2.7 g and can spin at over a hundred revolutions a second, so the default settings of a game
+physics engine get it badly wrong. Getting it right means modelling a few effects:
+
+- **In flight**, gravity pulls the ball down and air **drag** slows it. The **Magnus effect** curves a spinning ball:
+  topspin pushes it down, so it dips; backspin holds it up, so it floats. The spin itself slowly **decays** in the air.
+- **At a bounce**, **restitution** sets how much of the ball's speed it keeps (0 is a dead stop, 1 is perfectly
+  bouncy), and **friction** sets how hard the surface grips it, which turns speed into spin and spin into speed.
+- **On the paddle**, the rubber both grips and springs back sideways (its *tangential restitution*). That's what lets
+  a player add or reverse spin.
+
+"Calibrated" means each of these is set from measurements and then checked:
+
+1. **Every number has a source.** `lib/physics/data/priors.json` gives each parameter a value, a plausible range and a
+   citation (a *prior*, in the language of statistics: what we believe before looking at HIM's data).
+2. **The table is fitted to HIM's own data.** Its restitution, 0.94, was set from 1,117 bounces recorded in HIM's lab.
+3. **One reference model is the judge.** `lib/physics/reference/` implements the physics in plain numpy and scipy,
+   independent of any simulator. It's called the *oracle*. The Isaac Sim ball and the GPU ball are both tested
+   against it, and agree to within fractions of a millimetre.
+4. **The official test runs every time.** A ball dropped 30 cm onto a regulation table must bounce back 23-26 cm
+   (the ITTF table test). The replay and the template both start with it, and a deliberately dead table
+   (restitution 0.30) must fail it.
+
+You can run the oracle on your own laptop: the README's
+[warm-up experiment](../README.md#warm-up-free-spin-a-ball-on-your-laptop) spins a ball with it.
+
+**Words you'll meet below:**
+
+- **Table frame**: the coordinates everything uses: the origin is the centre of the table top, z points up, and x
+  runs along the table.
+- **Oracle**: the reference model, the ground truth the simulators are tested against.
+- **Adapter**: the code that makes a simulator's ball behave like the oracle's.
+- **RK4**: the classical fourth-order Runge-Kutta method, a standard way to step a motion equation forward in time
+  accurately.
+- **Tunnelling**: a fast ball skipping through a thin surface between two time steps, never touching it. *CCD*
+  (continuous collision detection) is the engine's guard against it.
+- **Effective mass**: how heavy the paddle "feels" to the ball at the contact point. It's less than the paddle's mass
+  when the ball hits off-centre, because the paddle can turn.
+
+## What's in `lib/physics`
+
+`lib/physics` holds the calibrated ball physics that every part of this project shares:
 
 - one set of physical parameters, with their units and priors;
 - an engine-independent **reference model** (the oracle) in numpy and scipy;
@@ -187,10 +232,15 @@ the blade centre), ball buckling beyond the restitution curves, wind, per-face r
 
 ## The replay's engine adapter (`engine/`)
 
-The replay runs Isaac Sim 6.0.1 with PhysX on the CPU (CCD, the PGS solver) at **3840 Hz**, 160 physics steps per
+In plain words: PhysX, the physics engine inside Isaac Sim, can't represent the paddle rubber's grip and spring, so
+the adapter takes the ball over completely. PhysX still moves the paddles; the adapter flies the ball with the oracle's
+equations, finds every contact itself, and applies the oracle's bounce laws.
+
+The replay runs Isaac Sim 6.0.1 with PhysX on the CPU (CCD, the PGS solver) and a **3840 Hz** game step, 160 steps per
 24 fps rendered frame. Why each setting (`engine/settings.py`):
 
-- **PGS, not TGS.** Under TGS a contact whose first touch falls early in a step loses most of its restitution.
+- **PGS, not TGS.** These are PhysX's two contact solvers. Under TGS a contact whose first touch falls early in a step
+  loses most of its restitution.
 - **CCD on the CPU**, no tunnelling at 20-50 m/s; stabilisation, sleep and damping off; the angular-velocity cap raised
   (the default clips a 150 rev/s topspin to a tenth).
 - **Hybrid contacts.** No rigid-contact engine represents the rubber's tangential restitution or normal-spin
@@ -212,10 +262,15 @@ trials to 0.00015 ms and 0.0006 mm (the parity budget is 2 game steps and 10 mm)
 
 ## The GPU ball (`vectorized/`) and the robot coupling
 
+In plain words: Isaac Lab runs thousands of copies of the table at once on the GPU, so the ball has to run there too,
+thousands at a time. `vectorized/` is the oracle's physics rewritten for that, and the *coupling* makes the robot's
+paddle and the ball push on each other.
+
 `vectorized/` is the oracle's physics as torch tensors of shape `(N, ...)`, one ball per environment, so a robot can
 train and play against the calibrated ball in thousands of parallel Isaac Lab worlds:
 
-- `VecParams` holds the parameters per environment (domain randomisation without parameter objects);
+- `VecParams` holds the parameters per environment (domain randomisation, which varies the physics between envs so a
+  policy can't overfit to one exact table, without parameter objects);
 - `BallBatch` steps every live ball by `dt` as `simulate` does: RK4, every watched gap, Illinois roots, the batched
   impact law;
 - `DenseBallBatch` is the same physics laid out for CUDA graphs: every phase of a step is compiled with
@@ -237,6 +292,9 @@ torque, computed env-locally in float64. The robot feels a contact one step late
 compiles and captures every phase when it is built (about four minutes; `CouplingConfig.warm_up`).
 
 ## What is calibrated against what
+
+Each row is one check, what it's compared with, and how close it came. "Budget" or "tolerance" is the largest error
+the check allows.
 
 | Check | Against | Result |
 |---|---|---|

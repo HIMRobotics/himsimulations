@@ -1,13 +1,22 @@
 """
-Run one ping-pong preset from inside its Antioch service, and exit nonzero if it fails::
+Run one ping-pong preset from a shell inside an Antioch session, and exit nonzero if it fails.
 
-    antioch service exec --service replay --no-stream -- python main.py replay session-2-first-point
-    antioch service exec --service robot --no-stream -- python main.py play g1-rally-smoke
-    antioch service exec --service robot --no-stream -- python main.py template unitree-g1
-    antioch service exec --service robot --no-stream -- python main.py retarget unitree-g1-smoke
-    python main.py list
+This is the hands-on alternative to ``antioch scenario run``: start a session yourself (a cloud machine running one of
+this project's services), then run presets in it as often as you like. Start the session for the engine you need, one
+at a time, from ``ping-pong/`` on your computer::
 
-Each command calls the same scenario as ``antioch scenario run``. ``list`` and ``--help`` start no simulator.
+    uv run antioch session new --profile replay    # Isaac Sim: the `replay` command
+    uv run antioch service exec --service replay --no-stream -- python main.py replay session-2-first-point
+
+    uv run antioch session new --profile robot     # Isaac Lab: the `play`, `template` and `retarget` commands
+    uv run antioch service exec --service robot --no-stream -- python main.py play g1-rally-smoke
+    uv run antioch service exec --service robot --no-stream -- python main.py template unitree-g1
+    uv run antioch service exec --service robot --no-stream -- python main.py retarget unitree-g1-smoke
+
+    uv run python main.py list                     # every preset, on your computer, without a simulator
+
+Each command calls the same scenario as ``antioch scenario run``. ``list`` and ``--help`` start no simulator. Release
+the session with ``uv run antioch session release`` when you're done, so it stops using your organization's compute.
 """
 
 from __future__ import annotations

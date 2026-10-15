@@ -1,9 +1,10 @@
 """
-The four ping-pong scenarios.
+The four ping-pong scenarios: the entry points Antioch runs. New here? ``README.md`` explains all of this from scratch.
 
-Each is a thin wrapper: it picks a frozen preset from ``lib/config.py`` by its case id and calls the feature's run
-function, which records its own checks on the run and returns a report. ``main.py`` and ``demo.ipynb`` call the same
-functions, so a run looks the same whichever entrypoint started it.
+A *scenario* is one kind of experiment, and a *case* is one named set of inputs for it. Each scenario below is a thin
+wrapper: it picks the case's frozen preset from ``lib/config.py`` (the preset's name is the case id) and calls the
+feature's run function, which records its own checks on the run and returns a report. ``main.py`` and ``demo.ipynb``
+call the same functions, so a run looks the same whichever entrypoint started it.
 
 =========================  =======  ==============================================================
 scenario                   service  cases
@@ -15,7 +16,9 @@ scenario                   service  cases
 ``retarget_him_strokes``   robot    ``unitree-g1-smoke`` (10 strokes), ``unitree-g1`` (all sessions)
 =========================  =======  ==============================================================
 
-Run one with ``antioch scenario run <scenario> --case <case>``, or a suite from ``antioch.yaml``.
+From ``ping-pong/``, list them with ``uv run antioch scenario collect`` (local and free), run one with
+``uv run antioch scenario run <scenario> --cases <case>``, or run a suite from ``antioch.yaml`` with
+``uv run antioch suite run <suite>``. To add a case, add a preset to ``lib/config.py``: its key becomes the case id.
 """
 
 from __future__ import annotations

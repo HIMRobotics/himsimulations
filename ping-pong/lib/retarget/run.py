@@ -1,13 +1,19 @@
 """
 Retarget HIM's mocap strokes onto a humanoid, check every stroke, and publish the kept ones (CPU only).
 
+*Retargeting* moves motion recorded on one body (HIM's player, in a motion-capture suit) onto another (the robot),
+whose limbs, joints and motors differ. This module finds robot motions that put the paddle where the human's was at
+each contact, solving inverse kinematics over a whole rally, then checks every stroke for reach, speed, torque,
+balance and feet. A stroke the robot can't make is rejected with its reason, never faked. In four steps:
+
     human   = load_mocap_strokes(asset)            # HIM's strokes on the table frame, the paddle state at each contact
     robot   = robot_model(ROBOTS[name])            # URDF kinematics, joint limits, motors, the paddle on the wrist
     rallies = retarget(human, robot)               # reach -> targets -> whole-rally IK -> quality checks, per rally
     package = write_package(kept_clips(rallies))   # the kept motion and every stroke's check values
 
 :func:`retarget` is the algorithm; :func:`retarget_him_strokes` is the scenario around it (fetch, publish, telemetry,
-the run's checks). ``docs/retargeting.md`` describes both and what a new robot must provide.
+the run's checks). ``docs/retargeting.md`` describes both and what a new robot must provide. Which sessions and
+rallies to solve is a :class:`~lib.config.RetargetParams` preset in ``lib/config.py``.
 """
 
 from __future__ import annotations
@@ -236,7 +242,17 @@ class RetargetReport(BaseModel):
 
 
 def retarget_him_strokes(run: antioch.ScenarioRun, params: RetargetParams) -> RetargetReport:
-    """Retarget HIM's mocap strokes onto a humanoid, check them, and publish the kept strokes (see the module docstring)."""
+    """
+    Retarget HIM's mocap strokes onto a humanoid, check them, and publish the kept strokes (see the module docstring).
+
+    The kept strokes are published to the asset store as ``ping-pong/<robot>-retargeted-strokes``, versioned by the
+    first 8 characters of the run ID, and attached to the run as a zip of ``motion.npz``, ``strokes.csv`` and
+    ``manifest.json``.
+
+    :param run: The active scenario run; the checks, results, package and telemetry are recorded on it.
+    :param params: The robot, the human strokes' asset, the sessions and rallies to solve, and the solver settings.
+    :return: The report; ``passed`` is the verdict.
+    """
     import antioch
     import rerun as rr
 

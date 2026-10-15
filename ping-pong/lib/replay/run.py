@@ -5,6 +5,14 @@ The ball is never replayed: it is live, calibrated physics from the first serve.
 motion (the suited player's motion capture, the opponent's motion inferred from the overhead video) and bend each
 recorded stroke, within human bounds, to meet the ball where the physics actually brings it. The virtual overhead
 Orbbecs render beside the recorded frames at 24 fps, so every moment of the replay can be compared with the real one.
+
+:func:`replay_him_session` reads top to bottom in the order things happen: load the session, build the lab, attach the
+live ball, spawn the players, open the recorder, run the ITTF drop tests, play every point, then grade. The run passes
+when it ends on its terminal condition (the last point ends physically) and its three tests pass: motion QA, physical
+invariants and telemetry completeness (``lib/replay/gates.py``). The negative control's preset expects them to fail.
+
+What to change lives in ``lib/config.py``: a :class:`~lib.config.ReplayParams` preset picks the session (1-7), how
+many points to play, and the engine's ball physics (``TABLE_PHYSICS``). Add a preset to make a new case.
 """
 
 from __future__ import annotations

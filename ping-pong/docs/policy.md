@@ -1,8 +1,36 @@
 # The trained G1 policy
 
-A Unitree G1 holding HIM's red paddle rallies against a distilled copy of HIM's opponent. It plays from the ball alone:
-nothing plans its strokes or tells it where to hit. This page covers what the policy reads and does, how a run grades
-it, how play differs from the conditions it was graded under, and its limits.
+A Unitree G1 humanoid holding HIM's red paddle rallies against a copy of HIM's opponent, learnt from the recordings.
+It plays from the ball alone: nothing plans its strokes or tells it where to hit. This page covers what the policy
+reads and does, how a run grades it, how play differs from the conditions it was graded under, and its limits.
+
+## The short version
+
+**A policy** is a robot's controller written as a function: every time step it reads an *observation* (numbers about
+the robot and the world) and returns an *action* (a command for each motor). This one runs 50 times a second. It reads
+146 numbers, including the robot's joint angles, its paddle, and where the ball is and will be. It returns 29 numbers,
+a target angle for each joint.
+
+The function is a small neural network, an *MLP* (multi-layer perceptron): three layers of 512, 256 and 128 neurons,
+with the ELU activation between them. Nobody wrote its strokes by hand. It learned them.
+
+**Reinforcement learning** (RL) is how. The robot plays in simulation, a *reward* function scores each moment (a ball
+returned legally scores high; leaning on the table costs), and a training algorithm nudges the network's weights so
+high-scoring actions become more likely. Repeat for millions of tries, in thousands of parallel worlds at once, and the
+network gets good. This one was trained with **PPO** (proximal policy optimization), a standard RL algorithm that makes
+small, careful updates so learning doesn't collapse. During training PPO also learns a second network, a *critic*
+that predicts how well things are going; together they're called an *actor-critic*. Only the actor plays.
+
+**How this one was produced**, in three stages:
+
+1. **Imitation.** It learned to track HIM's human strokes, [retargeted](retargeting.md) onto the G1's body.
+2. **Striking.** It learned to hit the ball at commanded contact points.
+3. **Rallying.** It played this opponent from the ball alone, paid mostly for returns that land legally.
+
+The training code isn't part of this repository. What ships is the result, the *checkpoint* (the network's saved
+weights) `ping-pong/g1-rally-policy@e0e0bb45-it1500`, from iteration 1500 of training. The scene, the opponent and
+the observation that a training loop of your own would build on are all here (see
+[training your own](#training-your-own)).
 
 The code is in `lib/policy/`:
 
@@ -17,24 +45,23 @@ The robot and its scene are in `lib/robots/`, the opponent in `lib/opponent/`.
 ## Running it
 
 ```bash
-uv run antioch scenario run play_ping_pong_policy --case g1-rally-smoke   # 64 envs, 30 s
-uv run antioch scenario run play_ping_pong_policy --case g1-rally         # 2048 envs, 30 s
+uv run antioch scenario run play_ping_pong_policy --cases g1-rally-smoke   # 64 envs, 30 s
+uv run antioch scenario run play_ping_pong_policy --cases g1-rally         # 2048 envs, 30 s
 ```
 
-Each run plays two passes, every env reset at the start of each:
+An *env* (environment) is one copy of the table scene, with its own robot, ball and opponent. Each run plays two
+passes, every env reset at the start of each:
 
 1. **The policy.** It plays 30 s of rallies, and env 0 is filmed in the HIM lab twin at 24 fps.
 2. **The blind control.** The same actor plays 30 s with the ball and its forecast hidden from it. A policy that plays
-   from the ball must collapse here.
+   from the ball must collapse here. This is a *negative control*: a test that must fail, to prove the measurement
+   can tell the difference.
 
-## The policy
+## The policy in detail
 
 The checkpoint is `ping-pong/g1-rally-policy@e0e0bb45-it1500`: an MLP actor, 512-256-128 with ELU, trained with PPO
-(rsl_rl 5.0.1). It was trained in stages:
-
-1. tracking HIM's strokes retargeted onto the G1;
-2. striking commanded contacts;
-3. playing rallies against this opponent from the ball alone.
+(rsl_rl 5.0.1) in the three stages above: tracking HIM's strokes retargeted onto the G1, striking commanded contacts,
+and playing rallies against this opponent from the ball alone.
 
 The final stage hid the stroke reference and the commands from the actor, and paid for returns that land legally.
 Smaller terms rewarded reach, contact and the return's quality, and the pelvis, torso and legs paid for leaning on the
@@ -65,11 +92,13 @@ A serve bounces first on the server's own half. The forecast predicts it through
 robot's half, and is always on. Without it the policy returns 22 % of HIM's recorded serves; with it, 98 %. The
 opponent's rally feeds are not serves, so the fix does not change them.
 
-**What it does: 29 joint targets.** Each target is `default_pose + action_scale * action`, and the joints' PD gains
-drive the joint there. The action scale is a quarter of each joint's peak torque over its stiffness: 0.031 rad for the
+**What it does: 29 joint targets.** Each target is `default_pose + action_scale * action`, and the joint's PD gains
+drive the joint there. PD gains set how stiffly (P, proportional) and with how much damping (D, derivative) a motor
+holds its target. The action scale is a quarter of each joint's peak torque over its stiffness: 0.031 rad for the
 wrist's small motor, 0.156 rad for the arms, 0.11-0.35 rad for the legs and waist.
 
-**Why it is folded.** The checkpoint's first layer reads 248 values. The other 102 are the stroke reference (88) and the
+**Why it is folded.** During training the network had extra inputs that play doesn't use, and *folding* removes them
+without changing a single output. The checkpoint's first layer reads 248 values. The other 102 are the stroke reference (88) and the
 strike command (14), and at play both are constant:
 
 - the hidden reference reads its normaliser mean;
@@ -104,8 +133,9 @@ robot.
   lands on the opponent's half; net touches are allowed.
 - **The hit rate.** Also legal given a hit, rally length in legal shots, why rallies ended, and falls per 10 s.
 
-Rallies cut by a fall, and rallies still in flight when the pass ends, are left out. The intervals are Wilson 95 %, and
-they are too narrow: receives in one rally are not independent.
+Rallies cut by a fall, and rallies still in flight when the pass ends, are left out. The intervals are Wilson 95 %
+confidence intervals, the range the true rate most likely lies in. They are too narrow: receives in one rally are not
+independent.
 
 **The run's checks** are the harness's and the physics'. The policy's own numbers are reported, never gated: a
 policy is judged on its evidence, and yours will read differently.
@@ -144,8 +174,9 @@ recovers. Three things differ:
 
 ## Limits
 
-- **Privileged observation.** The policy reads the ball's exact state and spin, and a forecast from the same physics
-  that flies the ball. A real robot would need perception and a predictor.
+- **Privileged observation.** The policy reads information a real robot couldn't have: the ball's exact state and
+  spin, and a forecast from the same physics that flies the ball. A real robot would need perception (cameras and
+  software to find the ball) and a predictor.
 - **Hardware.** The G1's actuators are Unitree's published motor table and deployed gains, not validated against a
   real G1. Its ankles and waist roll and pitch use the actuator table's 50 N m and 37 rad/s, where Unitree's URDF writes
   35 N m and 30 rad/s.
@@ -166,4 +197,7 @@ The pieces a training loop needs are all here:
 - **The opponent and its feeds:** `CoupledRally`, as the scene's hooks.
 - **The observation:** `observe`, and the forecast.
 
-The PPO, curriculum and reward code that trained this policy is not part of this repository.
+The PPO, curriculum and reward code that trained this policy is not part of this repository. To train your own you
+would add an RL library (this policy used rsl_rl), a reward function that scores what you want the robot to do, and
+usually a curriculum: a sequence of tasks from easy to hard, like the three stages above. The template,
+`load_humanoid_at_table` in `lib/robots/template.py`, is the simplest scene to start from.

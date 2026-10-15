@@ -4,7 +4,29 @@
 checks every stroke for what the robot can really do and packages the strokes that pass. The Unitree G1 is the worked
 example. Any humanoid with a URDF and a `RobotSpec` can be the target.
 
-The scenario is `retarget_him_strokes`, on the `robot` service (CPU only; no simulator starts):
+## The short version
+
+**Motion capture** (mocap) records how a person moves. HIM's player wore a Rokoko suit of motion sensors, which
+recorded the positions and orientations of 21 key joints (hips, spine, shoulders, hands, feet and so on) 30 times a
+second, through all seven sessions.
+
+**Retargeting** moves that motion onto a different body. You can't copy joint angles across: the G1's arm is 0.75 the
+length of the human's and its legs 0.84, its joints bend differently, and its motors have limits. So the retargeter
+works from what matters, the paddle. At each of the 737 moments the human's paddle touched the ball, it asks: what
+joint angles put the robot's paddle in the same place, facing the same way, moving the same way? Working backwards
+from where a hand must be to the joint angles that put it there is called **inverse kinematics** (IK). Here it's
+solved as an optimisation over a whole rally at once, so the motion is smooth, the feet stay planted, and the robot
+stays balanced.
+
+Then every stroke is **checked** against the robot's real abilities: can it reach, are its joints fast enough, are
+its motors strong enough, does it keep its balance, do its feet stay put? A stroke that fails is rejected with its
+reason, never faked. Of HIM's 737 strokes, the G1 reference output keeps 251. Balance and the waist motors' torque
+reject more strokes than reach does.
+
+## The scenario
+
+The scenario is `retarget_him_strokes`, on the `robot` service (CPU only; no simulator starts). In the table, "blade
+p50" is the median distance (the 50th percentile) between the robot's blade and the human's paddle path:
 
 | Case | What it solves | Local result (G1) |
 |---|---|---|
@@ -17,13 +39,20 @@ blade p50 0.405 cm (reference 0.405 cm).
 
 The G1 here stands with the elbow raised 0.1 rad, so the paddle clears the table at every reset. Through the solver's
 weak pull to the stance, that raises one backhand's capture-point shift from 2.84 to 3.35 cm, past the 3 cm balance
-check. That one stroke is the difference between 6 and 5.
+check. (The *capture point* is the spot on the floor where a robot would have to step to stop itself; the balance
+check limits how far a stroke can push it.) That one stroke is the difference between 6 and 5.
 
 ```bash
-antioch scenario run retarget_him_strokes --case unitree-g1-smoke
+uv run antioch scenario run retarget_him_strokes --cases unitree-g1-smoke
 ```
 
+The run publishes its kept strokes to HIM's asset store as `ping-pong/unitree-g1-retargeted-strokes`, versioned by
+the first 8 characters of its run ID. To retarget a different rally, see the README's
+[experiments](../README.md#4-retarget-a-different-rally).
+
 ## The algorithm
+
+Read this sketch as four steps, from the human's strokes to a package of robot motion:
 
 ```python
 human = load_mocap_strokes(asset)  # HIM's strokes on the table frame, the paddle state at each contact
@@ -45,7 +74,8 @@ package = write_package(kept_clips(rallies))  # the kept motion and every stroke
    - The paddle path passes each contact at the paddle state solved from the ball.
 3. **Solve and check**, per rally, in its own process.
    - The solve (`optimize.Problem.solve`): a per-frame Levenberg-Marquardt IK, then 200 Adam steps and 6000 L-BFGS
-     evaluations over the whole rally, all in float64 on one CPU thread.
+     evaluations over the whole rally, all in float64 on one CPU thread. (Levenberg-Marquardt, Adam and L-BFGS are
+     standard numerical optimisers: each repeatedly adjusts the joint angles to lower a cost.)
    - The quality checks (`validate.grade_segment`) then grade every stroke and every frame.
 
 **The joint map** (human key joint to robot body):
@@ -94,7 +124,8 @@ Only pieces of at least 1 s are kept.
   the check is live;
 - the written `motion.npz` is re-read and re-checked: joint limits, joint speed, foot skate, the floor, and the
   packaged strokes' paddle-path errors;
-- the kept strokes are published as `ping-pong/<robot>-retargeted-strokes@<run id>`.
+- the kept strokes are published as `ping-pong/<robot>-retargeted-strokes`, versioned by the first 8 characters of
+  the run ID.
 
 The tests (`tests/retarget`) keep a stroke the G1 can make, then reject four corruptions of it: the robot 2 cm off its
 path, the feet skating 5 cm, a joint at 0.98 of its range, and a joint past its speed limit.
@@ -133,8 +164,8 @@ Everything else comes from the kinematic tree:
 - **Leg joints:** the chain to each foot.
 - **Scale ratios:** the hip-joint-to-ankle and shoulder-to-wrist lengths at zero joint angles.
 
-Then add a case to `RETARGET_PRESETS` in `lib/config.py`, run the smoke case, and read `strokes.csv`. Its `cause`
-column says what the robot could not do.
+Then add the robot's name to `RobotName` and a case to `RETARGET_PRESETS` in `lib/config.py`, run that case, and read
+`strokes.csv` in its package. Its `cause` column says what the robot could not do.
 
 ## The human strokes: `ping-pong/him-mocap-strokes@v1`
 
@@ -193,6 +224,17 @@ at 50 Hz, with per-clip offsets `clip_start`:
 
 ## Running it yourself
 
+The retargeter is plain Python on the CPU, so it also runs on your own computer, with no Antioch session. First
+download the human strokes (33 MB) into `outputs/`, which git and Antioch both ignore (run from `ping-pong/`, signed in
+to the HIM Robotics organization):
+
+```bash
+mkdir -p outputs
+uv run antioch asset pull ping-pong/him-mocap-strokes -v v1 -o outputs/
+```
+
+Then, in `uv run python`, solve the probe rally and write its package:
+
 ```python
 from pathlib import Path
 
@@ -202,10 +244,10 @@ from lib.retarget.source import load_mocap_strokes
 from lib.retarget.run import retarget, kept_clips
 from lib.retarget.package import write_package
 
-human = load_mocap_strokes("him-mocap-strokes-v1.zip", sessions=(1,))
+human = load_mocap_strokes("outputs/him-mocap-strokes-v1.zip", sessions=(1,))
 robot = robot_model(ROBOTS["unitree-g1"])
 rallies = retarget(human, robot, rallies=("s1_r001",), workers=1)
-write_package(Path("out/g1-strokes"), robot, kept_clips(rallies), [s for r in rallies for s in r.strokes], {})
+write_package(Path("outputs/g1-strokes"), robot, kept_clips(rallies), [s for r in rallies for s in r.strokes], {})
 ```
 
 On one thread of a workstation CPU, the probe rally's 899 frames (50 Hz) take 4 minutes, about 0.27 s per frame. The

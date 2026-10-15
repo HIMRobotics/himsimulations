@@ -2,6 +2,13 @@
 The trained Unitree G1 rallies against HIM's distilled opponent in Isaac Lab, beside its blind control:
 :func:`play_ping_pong_policy`.
 
+A *policy* is the robot's controller as a function from observation to action; this one is a neural network trained
+by reinforcement learning (``docs/policy.md`` explains both from scratch). Thousands of copies of the table, *envs*,
+play at once on one GPU. The headline number is legal returns per receive: of the balls the opponent sends toward the
+robot's half, the share it returns to land on the opponent's half. The run's checks test the harness, not the robot;
+the policy's numbers are reported. The number of envs, the passes' lengths and the seed are a
+:class:`~lib.config.PlayParams` preset in ``lib/config.py``.
+
 **Play conditions.** These are the trained policy's grade conditions, except for the ball physics:
 
 - **Ball physics: nominal.** The calibrated priors' centre, every rally, where the grades randomised it per rally.
@@ -44,7 +51,16 @@ class PlayReport(BaseModel):
 
 
 def play_ping_pong_policy(run: antioch.ScenarioRun, params: PlayParams) -> PlayReport:
-    """The trained policy rallies against the HIM opponent in Isaac Lab, beside its blind control."""
+    """
+    The trained policy rallies against the HIM opponent in Isaac Lab, beside its blind control.
+
+    Two passes over every env: the policy plays ``max_sim_s`` of rallies with env 0 filmed, then the same actor plays
+    ``control_s`` with the ball hidden (the negative control, which must collapse). Then the grade.
+
+    :param run: The active scenario run; the checks, results and ``play_summary.json`` are recorded on it.
+    :param params: The robot, the checkpoint, the number of envs, the passes' lengths, the film and the seed.
+    :return: The report; ``passed`` is the verdict.
+    """
 
     import antioch
 
