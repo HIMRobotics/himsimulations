@@ -1,0 +1,14 @@
+.antioch/
+.venv/
+.ruff_cache/
+.pytest_cache/
+.ipynb_checkpoints/
+__pycache__/
+*.py[cod]
+.env
+.env.*
+runs/
+outputs/
+*.rrd
+*.mp4
+pyrightconfig.json

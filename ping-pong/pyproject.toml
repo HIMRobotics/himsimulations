@@ -1,0 +1,81 @@
+[project]
+name = "ping-pong"
+version = "0.1.0"
+description = "Table tennis on Antioch: HIM Robotics' recorded sessions replayed with calibrated ball physics, a trained Unitree G1 rallying, a bare humanoid-at-table template and a stroke retargeter"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+# Runtime pins equal the versions the isaac-sim-6.0.1 and isaac-lab-3.0 engine
+# images already own (antioch-sim 0.5.338's runtime constraints), so the engine
+# Dockerfiles install nothing but PyAV and local tests run the numerics the
+# simulator runs. tests/test_contract.py enforces the match.
+#
+# One exception: pydantic. The engines own 2.11.10, but this environment also
+# runs the CLI, and antioch-sim 0.5.338 digests a submission with
+# `Field(exclude_if=...)`, which pydantic < 2.12 ignores; under 2.11.10 every
+# run is refused at revision preparation. The engine images keep their own
+# 2.11.10.
+dependencies = [
+  "antioch-sim[isaac-sim,isaac-lab]==0.5.338",
+  "av==19.0.1",
+  "click==8.1.7",
+  "numpy==2.3.1",
+  "pydantic==2.13.5",
+  "rerun-sdk==0.38.1",
+  "scipy==1.17.0",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8",
+  "pytest-timeout>=2.3",
+  "ruff>=0.11",
+  "pyright>=1.1.390",
+  "pyyaml>=6",
+  # The compositor service's own runtime, so pyright and its tests run without its image.
+  "fastapi>=0.115",
+  "uvicorn>=0.35",
+  "python-multipart>=0.0.9",
+  "pillow>=10",
+  "imageio-ffmpeg>=0.5",
+  "httpx>=0.28",
+  # The robot image owns torch 2.11.0 (CUDA); the CPU build lets the policy and retargeting tests run locally.
+  "torch==2.11.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-ra --strict-markers --strict-config --import-mode=importlib"
+timeout = 300
+
+[tool.ruff]
+line-length = 160
+target-version = "py312"
+extend-exclude = ["runs", "outputs"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "N", "RUF"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"compositor/worker.py" = ["B008"] # FastAPI declares Form/File/UploadFile in argument defaults.
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+include = ["main.py", "scenarios.py", "lib", "compositor", "tests", "tools"]
+exclude = ["**/__pycache__"]
+pythonVersion = "3.12"
+typeCheckingMode = "standard"
+reportMissingModuleSource = false

@@ -1,0 +1,20 @@
+{
+ "8E": {
+  "gains": [
+   0.9672,
+   1.1013,
+   0.9928
+  ],
+  "lighting": "linear tone map, 5500 K, panel intensity 8960",
+  "source": "fitted on the rendered 8E view against the recorded 8E table and floor medians under the calibrated lighting"
+ },
+ "8F": {
+  "gains": [
+   0.8124,
+   1.0131,
+   1.0548
+  ],
+  "lighting": "linear tone map, 5500 K, panel intensity 8960",
+  "source": "fitted on the rendered 8F view against the recorded 8F table and floor medians under the calibrated lighting"
+ }
+}

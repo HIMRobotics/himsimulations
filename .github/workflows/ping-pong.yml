@@ -1,0 +1,36 @@
+name: ping-pong
+
+on:
+  push:
+    paths: ["ping-pong/**", "tools/**", ".github/workflows/ping-pong.yml"]
+  pull_request:
+    paths: ["ping-pong/**", "tools/**", ".github/workflows/ping-pong.yml"]
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: ping-pong
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.5"
+      - name: Organization lock
+        run: python3 ../tools/check_org_lock.py
+      - name: Environment
+        run: uv sync --locked --group dev
+      - name: Lint
+        run: uv run --no-sync ruff check .
+      - name: Format
+        run: uv run --no-sync ruff format --check .
+      - name: Types
+        run: uv run --no-sync pyright
+      - name: Scenarios and suites collect
+        run: |
+          uv run --no-sync antioch scenario collect --all-cases
+          uv run --no-sync antioch suite collect
+      - name: Tests
+        run: uv run --no-sync pytest

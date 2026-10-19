@@ -1,0 +1,42 @@
+{
+ "small": {
+  "digests": {
+   "decisions": "96cc9fca8ed5c82365fa5d33a4cd3bb2405f5b6b899576e2db52149bd99f287b",
+   "refines": "2bb5c908eafb268d78af8af9a4af891bcf9840876316bbc420c3cc34e3229428",
+   "commands": "18f17319ed0dda38d538c26f9907a8bdfb4f4f523fa9f886166285b1917224d9",
+   "events": "7d4b09428c9503a91fb8ffa944bddb1c9bcce1c69946168786594d181a968f5e",
+   "blades": "397485c19cdb0f01b15ac1adbc74c4d970bafd3baca060aecb3feb2be7cfeb9c",
+   "forecast": "c12b5aa9cc31fb72715d6c325d005b4f8ad3a8d2b249c8f2edfea4b4500ff073",
+   "rallies": "465140b3cd178408902add6ecdf6fe1939a183f157f4f96ed59638c84dbfafed"
+  },
+  "counts": {
+   "robot_receives": 61,
+   "robot_let_go": 11,
+   "robot_stray_hits": 9,
+   "opponent_decisions": 59,
+   "rallies": 44,
+   "robot_hits": 14,
+   "opponent_hits": 2
+  }
+ },
+ "full": {
+  "digests": {
+   "decisions": "a93232102dfe6875664e1050ccdd85428e45efafac01b02a789d9c000b7fcc3e",
+   "refines": "73577aaf2440319219366b6a7b9f4ed518e1063985b7f620a655bbc704e1df4b",
+   "commands": "5e7c3d90afca90d08933fe145f75a4304089abcc28b7c95e29c114ea7e2b1947",
+   "events": "a45299deb78123951322ddfec825312a0b60839f4ea8d525212630216a4c9787",
+   "blades": "744b557a1cd0cc494b7764a7364ac0e819602b068465923d0d8deb9afc2ab779",
+   "forecast": "8e78dd13bc01594fe0213b483256258263df3ff2a325b5199cab9f3041d5e1ad",
+   "rallies": "a10765ba65e86c0aea796bc0de19105c728d40106cb6cd9a0d0dfb124f5e51ab"
+  },
+  "counts": {
+   "robot_receives": 5709,
+   "robot_let_go": 863,
+   "robot_stray_hits": 768,
+   "opponent_decisions": 5633,
+   "rallies": 3732,
+   "robot_hits": 259,
+   "opponent_hits": 112
+  }
+ }
+}

@@ -1,0 +1,10 @@
+g1_29dof_rev_1_0.urdf is Unitree Robotics' URDF of the G1 29-DoF (rev 1.0), copied unmodified from
+
+  https://github.com/unitreerobotics/unitree_ros
+  commit 5994d4faef, path robots/g1_description/g1_29dof_rev_1_0.urdf
+  sha256 c0ae739c640c3e2c00d1 (first 20 hex digits)
+
+Copyright (c) 2016-2022 HangZhou YuShu TECHNOLOGY CO.,LTD. ("Unitree Robotics"), distributed under the BSD 3-Clause
+License in LICENSE (the repository's own, at the same commit). This project reads it for the robot's collision
+geometry and for the retargeter's kinematic model (lib/robots/unitree_g1.py names its path and sha); the meshes it
+names are not copied.
